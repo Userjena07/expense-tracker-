@@ -5,12 +5,12 @@ import { useAuthStore } from '../store/authStore';
 import { ApiResponse, AuthResponse } from '../types/api';
 
 const getBaseUrl = (): string => {
-  if (Platform.OS === 'web') {
-    return 'http://localhost:5050';
-  }
-
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  if (Platform.OS === 'web') {
+    return 'http://localhost:5050';
   }
 
   // Auto-detect host IP when running on physical device via Expo Go or simulator

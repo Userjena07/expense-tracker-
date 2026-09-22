@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 
 interface SettingsState {
   theme: 'dark' | 'light';
@@ -49,7 +49,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   loadSettings: async () => {
     try {
-      const data = await SecureStore.getItemAsync(SETTINGS_KEY);
+      const data = await storage.getItem(SETTINGS_KEY);
       if (data) {
         const parsed = JSON.parse(data);
         set({
@@ -72,7 +72,7 @@ async function saveToStorage(state: any) {
       currency: state.currency,
       hasSeenOnboarding: state.hasSeenOnboarding,
     });
-    await SecureStore.setItemAsync(SETTINGS_KEY, json);
+    await storage.setItem(SETTINGS_KEY, json);
   } catch (e) {
     console.error('Failed to save settings', e);
   }

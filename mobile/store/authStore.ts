@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 import { User } from '../types/api';
 
 interface AuthState {
@@ -31,9 +31,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setAuth: async (user: User, accessToken: string, refreshToken: string) => {
     try {
-      await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
-      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+      await storage.setItem(ACCESS_TOKEN_KEY, accessToken);
+      await storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      await storage.setItem(USER_KEY, JSON.stringify(user));
     } catch (e) {
       console.error('Failed to save auth to secure store', e);
     }
@@ -49,14 +49,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   updateUser: (user: User) => {
-    SecureStore.setItemAsync(USER_KEY, JSON.stringify(user)).catch(console.error);
+    storage.setItem(USER_KEY, JSON.stringify(user)).catch(console.error);
     set({ user });
   },
 
   setTokens: async (accessToken: string, refreshToken: string) => {
     try {
-      await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+      await storage.setItem(ACCESS_TOKEN_KEY, accessToken);
+      await storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     } catch (e) {
       console.error('Failed to update tokens in secure store', e);
     }
@@ -70,9 +70,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     try {
-      await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-      await SecureStore.deleteItemAsync(USER_KEY);
+      await storage.deleteItem(ACCESS_TOKEN_KEY);
+      await storage.deleteItem(REFRESH_TOKEN_KEY);
+      await storage.deleteItem(USER_KEY);
     } catch (e) {
       console.error('Failed to clear secure store', e);
     }
@@ -90,9 +90,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loadStoredAuth: async () => {
     try {
       const [accessToken, refreshToken, userJson] = await Promise.all([
-        SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
-        SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
-        SecureStore.getItemAsync(USER_KEY),
+        storage.getItem(ACCESS_TOKEN_KEY),
+        storage.getItem(REFRESH_TOKEN_KEY),
+        storage.getItem(USER_KEY),
       ]);
 
       if (accessToken && userJson) {
