@@ -33,10 +33,17 @@ public class SecurityHeadersMiddleware
                 headers["Referrer-Policy"] = "no-referrer";
             }
 
-            // Content-Security-Policy
+            // Content-Security-Policy (Allow Swagger UI inline scripts/styles and data: images)
             if (!headers.ContainsKey("Content-Security-Policy"))
             {
-                headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none';";
+                if (context.Request.Path.StartsWithSegments("/swagger"))
+                {
+                    headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none';";
+                }
+                else
+                {
+                    headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none';";
+                }
             }
 
             // Strict-Transport-Security
