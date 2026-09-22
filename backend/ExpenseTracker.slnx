@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/Core/ExpenseTracker.Core.csproj" />
+  <Project Path="src/Repository/ExpenseTracker.Repository.csproj" />
+  <Project Path="src/InternalApi/ExpenseTracker.InternalApi.csproj" />
+</Solution>

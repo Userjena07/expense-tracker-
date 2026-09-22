@@ -1,0 +1,74 @@
+{
+  "messages": {
+    "GENERAL": {
+      "SUCCESS": "Operation completed successfully.",
+      "SERVER_ERROR": "An unexpected error occurred. Please try again later.",
+      "NOT_FOUND": "Requested record was not found.",
+      "VALIDATION_ERROR": "Validation failed. Please check your input.",
+      "RATE_LIMIT_EXCEEDED": "Too many requests. Please try again later."
+    },
+
+    "AUTH": {
+      "REGISTER_SUCCESS": "Registration successful. Welcome to Expense Tracker!",
+      "LOGIN_SUCCESS": "Login successful.",
+      "LOGOUT_SUCCESS": "Logged out successfully.",
+      "INVALID_CREDENTIALS": "Invalid email or password.",
+      "USER_NOT_FOUND": "User account does not exist.",
+      "EMAIL_ALREADY_EXISTS": "This email address is already registered.",
+      "SESSION_EXPIRED": "Your session has expired. Please log in again.",
+      "SESSION_CREATED": "Session established.",
+      "REFRESH_SUCCESS": "Tokens refreshed successfully.",
+      "REFRESH_TOKEN_INVALID": "Invalid or expired refresh token. Please log in again.",
+      "UNAUTHORIZED": "Unauthorized access."
+    },
+    "USER": {
+      "PROFILE_FOUND": "Profile retrieved successfully.",
+      "PROFILE_UPDATED": "Profile updated successfully.",
+      "NOT_FOUND": "User not found.",
+      "FULLNAME_REQUIRED": "Full name is required.",
+      "EMAIL_REQUIRED": "Email is required.",
+      "EMAIL_INVALID": "Please enter a valid email address.",
+      "PASSWORD_REQUIRED": "Password is required.",
+      "PASSWORD_MIN_LENGTH": "Password must be at least 6 characters long."
+    },
+    "ACCOUNT": {
+      "LIST_SUCCESS": "Accounts retrieved successfully.",
+      "FOUND": "Account found.",
+      "SAVE_SUCCESS": "Account saved successfully.",
+      "DELETE_SUCCESS": "Account deleted successfully.",
+      "NOT_FOUND": "Account not found.",
+      "NAME_REQUIRED": "Account name is required.",
+      "INVALID_TYPE": "Invalid account type."
+    },
+    "CATEGORY": {
+      "LIST_SUCCESS": "Categories retrieved successfully.",
+      "FOUND": "Category found.",
+      "SAVE_SUCCESS": "Category saved successfully.",
+      "DELETE_SUCCESS": "Category deleted successfully.",
+      "NOT_FOUND": "Category not found.",
+      "NAME_REQUIRED": "Category name is required."
+    },
+    "TRANSACTION": {
+      "LIST_SUCCESS": "Transactions retrieved successfully.",
+      "FOUND": "Transaction found.",
+      "SAVE_SUCCESS": "Transaction saved successfully.",
+      "DELETE_SUCCESS": "Transaction deleted successfully.",
+      "NOT_FOUND": "Transaction not found.",
+      "AMOUNT_INVALID": "Amount must be greater than zero.",
+      "ACCOUNT_REQUIRED": "Account is required.",
+      "CATEGORY_REQUIRED": "Category is required.",
+      "DATE_REQUIRED": "Transaction date is required.",
+      "INVALID_TRANSFER_ACCOUNT": "Transfer target account must be different from source account."
+    },
+    "BUDGET": {
+      "LIST_SUCCESS": "Budgets retrieved successfully.",
+      "SAVE_SUCCESS": "Budget saved successfully.",
+      "AMOUNT_INVALID": "Budget amount must be greater than zero."
+    },
+    "SUMMARY": {
+      "MONTHLY_SUCCESS": "Monthly summary retrieved successfully.",
+      "CATEGORY_SUCCESS": "Category breakdown retrieved successfully.",
+      "DAILY_SUCCESS": "Daily summary retrieved successfully."
+    }
+  }
+}
