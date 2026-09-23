@@ -144,9 +144,9 @@ export default function InsightsScreen() {
     };
   });
 
-  const chartSize = Math.min(width - 32, 330);
+  const chartSize = Math.min(width - 20, 340);
   const center = chartSize / 2;
-  const radiusVal = Math.round(chartSize * 0.28);
+  const radiusVal = Math.round(chartSize * 0.26);
 
   // Build SVG Pie Paths
   const renderPieSlices = () => {
@@ -166,7 +166,6 @@ export default function InsightsScreen() {
 
     if (pieData.length === 1) {
       const slice = pieData[0];
-      const emoji = getCategoryEmoji(slice.categoryName, slice.categoryIcon);
       return (
         <G>
           <Circle
@@ -178,13 +177,13 @@ export default function InsightsScreen() {
           />
           <SvgText
             x={center}
-            y={center - 8}
+            y={center - 6}
             fill="#FFFFFF"
-            fontSize="18"
+            fontSize="14"
             fontWeight="700"
             textAnchor="middle"
           >
-            {emoji}
+            {slice.categoryName}
           </SvgText>
           <SvgText
             x={center}
@@ -216,21 +215,21 @@ export default function InsightsScreen() {
 
       // Callout Line & Label calculation
       const shouldDrawCallout = slice.percentage >= 1.5 && idx < 6;
-      const emoji = getCategoryEmoji(slice.categoryName, slice.categoryIcon);
 
       const innerLineX = center + (radiusVal - 2) * Math.cos(midAngle);
       const innerLineY = center + (radiusVal - 2) * Math.sin(midAngle);
 
       const isRight = Math.cos(midAngle) >= 0;
-      const elbowDist = radiusVal + 26 + (idx % 2 === 1 ? 16 : 0);
+      const elbowDist = radiusVal + 28 + (idx % 2 === 1 ? 16 : 0);
       const elbowX = center + elbowDist * Math.cos(midAngle);
       const elbowY = center + elbowDist * Math.sin(midAngle);
-      const tipX = isRight ? elbowX + 20 : elbowX - 20;
+      const tipX = isRight ? elbowX + 22 : elbowX - 22;
       const tipY = elbowY;
 
       const textAnchor = isRight ? 'start' : 'end';
-      const textX = isRight ? tipX + 4 : tipX - 4;
-      const displayName = slice.categoryName.length > 10 ? `${slice.categoryName.slice(0, 9)}…` : slice.categoryName;
+      const textX = isRight ? tipX + 5 : tipX - 5;
+      const catName = slice.categoryName || 'General';
+      const displayName = catName.length > 15 ? `${catName.slice(0, 14)}…` : catName;
 
       const isSelected = selectedCategoryName === slice.categoryName;
       const isDimmed = selectedCategoryName !== null && !isSelected;
@@ -265,7 +264,7 @@ export default function InsightsScreen() {
                 fontWeight="700"
                 textAnchor={textAnchor}
               >
-                {emoji} {displayName}
+                {displayName}
               </SvgText>
               <SvgText
                 x={textX}

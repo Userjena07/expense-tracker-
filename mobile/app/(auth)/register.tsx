@@ -131,9 +131,6 @@ export default function RegisterScreen() {
             <Text style={[styles.welcomeTitle, { color: colors.text, fontSize: typography.title }]}>
               Welcome! What's your name? 👋
             </Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: typography.base }]}>
-              Zero passwords or emails. Fast, private, and secured by your phone's screen lock.
-            </Text>
           </View>
 
           <View style={styles.form}>
