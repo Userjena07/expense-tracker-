@@ -8,7 +8,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Check, ArrowRightLeft } from 'lucide-react-native';
@@ -27,6 +27,7 @@ export default function AddTransactionModal() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { colors, typography, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const currencySymbol = useSettingsStore((s) => s.currencySymbol);
 
   const [txnType, setTxnType] = useState<TransactionType>(TransactionType.Expense);
@@ -118,7 +119,15 @@ export default function AddTransactionModal() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.bg,
+          paddingTop: Math.max(insets.top, 12),
+        },
+      ]}
+    >
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -134,7 +143,13 @@ export default function AddTransactionModal() {
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 28) },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Type Toggle: Expense / Income / Transfer */}
         <View style={[styles.typeToggleWrapper, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
           <TouchableOpacity
@@ -326,7 +341,7 @@ export default function AddTransactionModal() {
           style={styles.saveBtn}
         />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

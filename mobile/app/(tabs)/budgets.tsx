@@ -10,7 +10,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, PiggyBank, AlertTriangle, CheckCircle2, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -95,10 +95,20 @@ export default function BudgetsScreen() {
     });
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.bg,
+          paddingTop: Math.max(insets.top, 10),
+        },
+      ]}
+    >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
         refreshControl={<RefreshControl refreshing={budgetsLoading} onRefresh={refetchBudgets} tintColor={colors.accent} />}
         showsVerticalScrollIndicator={false}
       >
@@ -389,7 +399,7 @@ export default function BudgetsScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

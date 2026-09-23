@@ -9,7 +9,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search,
@@ -129,6 +129,8 @@ export default function TransactionsScreen() {
     return groups;
   }, [transactions]);
 
+  const insets = useSafeAreaInsets();
+
   const typeTabs = [
     { id: 0, label: 'All' },
     { id: 1, label: 'Expenses' },
@@ -137,7 +139,15 @@ export default function TransactionsScreen() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.bg,
+          paddingTop: Math.max(insets.top, 10),
+        },
+      ]}
+    >
       {/* Top Header */}
       <View style={styles.topHeader}>
         <View>
@@ -295,7 +305,7 @@ export default function TransactionsScreen() {
           </View>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -9,7 +9,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -120,8 +120,18 @@ export default function CategoryManagementScreen() {
 
   const colorPalette = ['#8B5CF6', '#10B981', '#FF5A78', '#38BDF8', '#F59E0B', '#EC4899', '#14B8A6'];
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.bg,
+          paddingTop: Math.max(insets.top, 10),
+        },
+      ]}
+    >
       <Header
         title="Categories"
         subtitle="Customize your expense and income tags"
@@ -282,7 +292,7 @@ export default function CategoryManagementScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -8,7 +8,7 @@ import {
   Switch,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   User,
@@ -36,6 +36,7 @@ import { Card } from '../../components/Card';
 export default function SettingsScreen() {
   const router = useRouter();
   const { colors, typography, radius, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user, logout, updateUser } = useAuthStore();
   const { theme, setTheme, currency, setCurrency } = useSettingsStore();
 
@@ -116,8 +117,16 @@ export default function SettingsScreen() {
   const currencies = ['INR', 'USD', 'EUR', 'GBP', 'CAD', 'AUD'];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.bg,
+          paddingTop: Math.max(insets.top, 10),
+        },
+      ]}
+    >
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
         {/* Top Header */}
         <View style={styles.topHeader}>
           <Text style={[styles.title, { color: colors.text, fontSize: typography.xl }]}>
@@ -305,7 +314,7 @@ export default function SettingsScreen() {
           Expense Tracker v1.0.0 • React Native & ASP.NET Core
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

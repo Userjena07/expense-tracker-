@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, PieChart, Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../theme/useTheme';
@@ -24,6 +24,7 @@ const { width } = Dimensions.get('window');
 
 export default function InsightsScreen() {
   const { colors, typography, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const currencySymbol = useSettingsStore((s) => s.currencySymbol);
 
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
@@ -84,9 +85,17 @@ export default function InsightsScreen() {
   const maxDailyExpense = dailyBreakdown.reduce((max, d) => Math.max(max, d.expenseTotal), 0);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.bg,
+          paddingTop: Math.max(insets.top, 10),
+        },
+      ]}
+    >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor={colors.accent} />}
         showsVerticalScrollIndicator={false}
       >
@@ -235,7 +244,7 @@ export default function InsightsScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

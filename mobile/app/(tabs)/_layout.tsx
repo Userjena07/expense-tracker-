@@ -7,10 +7,12 @@ import {
   PieChart,
   Settings as SettingsIcon,
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/useTheme';
 
 export default function TabLayout() {
   const { colors, typography } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -22,9 +24,9 @@ export default function TabLayout() {
           backgroundColor: colors.tabBarBg,
           borderTopColor: colors.cardBorder,
           borderTopWidth: 1,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 56 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 6),
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
           fontSize: 11,

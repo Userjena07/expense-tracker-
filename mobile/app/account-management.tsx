@@ -9,7 +9,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, X, Wallet, Building2, CreditCard, CircleDollarSign, Gift } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -122,8 +122,18 @@ export default function AccountManagementScreen() {
 
   const colorPalette = ['#5B3FE0', '#10B981', '#FF5A78', '#38BDF8', '#F59E0B', '#EC4899'];
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.bg,
+          paddingTop: Math.max(insets.top, 10),
+        },
+      ]}
+    >
       <Header
         title="Accounts & Wallets"
         subtitle="Manage your cash, bank and pocket money"
@@ -290,7 +300,7 @@ export default function AccountManagementScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

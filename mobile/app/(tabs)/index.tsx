@@ -7,7 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -72,6 +72,8 @@ export default function DashboardScreen() {
     await Promise.all([refetchSummary(), refetchAccounts(), refetchTxn()]);
   };
 
+  const insets = useSafeAreaInsets();
+
   const safeToSpend = summary?.safeToSpendToday ?? 0;
   const totalBalance = summary?.totalAccountBalance ?? 0;
   const totalExpense = summary?.totalExpense ?? 0;
@@ -79,9 +81,17 @@ export default function DashboardScreen() {
   const daysLeft = summary?.daysRemainingInCycle ?? 1;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.bg,
+          paddingTop: Math.max(insets.top, 10),
+        },
+      ]}
+    >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
         showsVerticalScrollIndicator={false}
       >
@@ -323,7 +333,7 @@ export default function DashboardScreen() {
         <Plus size={26} color="#FFFFFF" />
         <Text style={[styles.fabText, { fontSize: typography.sm }]}>Add Expense</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 

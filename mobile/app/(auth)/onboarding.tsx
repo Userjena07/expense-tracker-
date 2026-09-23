@@ -6,7 +6,7 @@ import {
   Dimensions,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Zap, ShieldCheck, PieChart, ArrowRight } from 'lucide-react-native';
 import { useTheme } from '../../theme/useTheme';
@@ -19,6 +19,7 @@ export default function OnboardingScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const router = useRouter();
   const { colors, typography, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const setOnboardingSeen = useSettingsStore((s) => s.setOnboardingSeen);
 
   const slides = [
@@ -62,7 +63,16 @@ export default function OnboardingScreen() {
   const slide = slides[currentSlide];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.bg,
+          paddingTop: Math.max(insets.top, 16),
+          paddingBottom: Math.max(insets.bottom, 20),
+        },
+      ]}
+    >
       <View style={styles.topBar}>
         <Text style={[styles.brandText, { color: colors.accent, fontSize: typography.lg }]}>
           Expense<Text style={{ color: colors.text }}>Tracker</Text>
@@ -121,7 +131,7 @@ export default function OnboardingScreen() {
           icon={<ArrowRight size={18} color="#FFFFFF" />}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
