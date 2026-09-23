@@ -42,16 +42,16 @@ BEGIN
     SELECT 1 AS [Status], 'SUMMARY_DAILY_SUCCESS' AS [MessageCode];
 
     SELECT 
-        t.[TxnDate],
+        CAST(t.[TxnDate] AS DATE) AS [TxnDate],
         ISNULL(SUM(CASE WHEN t.[TransactionType] = 1 THEN t.[Amount] ELSE 0 END), 0) AS [ExpenseTotal],
         ISNULL(SUM(CASE WHEN t.[TransactionType] = 2 THEN t.[Amount] ELSE 0 END), 0) AS [IncomeTotal],
         COUNT(t.[Id]) AS [TransactionCount]
     FROM [dbo].[Transaction] t
     WHERE t.[UserId] = @RequestedBy
       AND t.[TxnDate] >= @StartDate
-      AND t.[TxnDate] <= @EndDate
+      AND t.[TxnDate] < DATEADD(DAY, 1, @EndDate)
       AND t.[IsDeleted] = 0
-    GROUP BY t.[TxnDate]
-    ORDER BY t.[TxnDate] ASC;
+    GROUP BY CAST(t.[TxnDate] AS DATE)
+    ORDER BY CAST(t.[TxnDate] AS DATE) ASC;
 END
 GO

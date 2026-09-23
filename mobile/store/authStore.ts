@@ -6,10 +6,12 @@ interface AuthState {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
+  secretKey: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   isLocked: boolean;
-  setAuth: (user: User, accessToken: string, refreshToken: string) => Promise<void>;
+  setAuth: (user: User, accessToken: string, refreshToken: string, secretKey?: string) => Promise<void>;
+  setSecretKey: (key: string) => Promise<void>;
   updateUser: (user: User) => void;
   setTokens: (accessToken: string, refreshToken: string) => Promise<void>;
   setLocked: (locked: boolean) => void;
@@ -20,20 +22,25 @@ interface AuthState {
 const ACCESS_TOKEN_KEY = 'ET_ACCESS_TOKEN';
 const REFRESH_TOKEN_KEY = 'ET_REFRESH_TOKEN';
 const USER_KEY = 'ET_USER_PROFILE';
+const SECRET_KEY = 'ET_SECRET_KEY';
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: null,
   refreshToken: null,
+  secretKey: null,
   isAuthenticated: false,
   isLoading: true,
   isLocked: false,
 
-  setAuth: async (user: User, accessToken: string, refreshToken: string) => {
+  setAuth: async (user: User, accessToken: string, refreshToken: string, secretKey?: string) => {
     try {
       await storage.setItem(ACCESS_TOKEN_KEY, accessToken);
       await storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
       await storage.setItem(USER_KEY, JSON.stringify(user));
+      if (secretKey) {
+        await storage.setItem(SECRET_KEY, secretKey);
+      }
     } catch (e) {
       console.error('Failed to save auth to secure store', e);
     }
@@ -42,10 +49,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user,
       accessToken,
       refreshToken,
+      secretKey: secretKey || get().secretKey,
       isAuthenticated: true,
       isLoading: false,
       isLocked: false,
     });
+  },
+
+  setSecretKey: async (key: string) => {
+    try {
+      await storage.setItem(SECRET_KEY, key);
+    } catch (e) {
+      console.error('Failed to save secret key', e);
+    }
+    set({ secretKey: key });
   },
 
   updateUser: (user: User) => {
@@ -73,6 +90,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await storage.deleteItem(ACCESS_TOKEN_KEY);
       await storage.deleteItem(REFRESH_TOKEN_KEY);
       await storage.deleteItem(USER_KEY);
+      await storage.deleteItem(SECRET_KEY);
     } catch (e) {
       console.error('Failed to clear secure store', e);
     }
@@ -81,6 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
+      secretKey: null,
       isAuthenticated: false,
       isLoading: false,
       isLocked: false,
@@ -89,10 +108,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   loadStoredAuth: async () => {
     try {
-      const [accessToken, refreshToken, userJson] = await Promise.all([
+      const [accessToken, refreshToken, userJson, storedSecretKey] = await Promise.all([
         storage.getItem(ACCESS_TOKEN_KEY),
         storage.getItem(REFRESH_TOKEN_KEY),
         storage.getItem(USER_KEY),
+        storage.getItem(SECRET_KEY),
       ]);
 
       if (accessToken && userJson) {
@@ -101,6 +121,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user,
           accessToken,
           refreshToken,
+          secretKey: storedSecretKey,
           isAuthenticated: true,
           isLoading: false,
           isLocked: user.isBiometricOn,
@@ -115,6 +136,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
+      secretKey: null,
       isAuthenticated: false,
       isLoading: false,
       isLocked: false,

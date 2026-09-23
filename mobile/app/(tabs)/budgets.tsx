@@ -9,6 +9,8 @@ import {
   Modal,
   TextInput,
   Alert,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -301,8 +303,25 @@ export default function BudgetsScreen() {
 
       {/* Set Budget Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text, fontSize: typography.lg }]}>
                 {selectedCatId ? 'Set Category Budget' : 'Set Overall Monthly Budget'}
@@ -379,6 +398,7 @@ export default function BudgetsScreen() {
               value={budgetAmount}
               onChangeText={setBudgetAmount}
               keyboardType="numeric"
+              autoFocus
               style={[
                 styles.amountInput,
                 {
@@ -394,10 +414,10 @@ export default function BudgetsScreen() {
               title="Save Budget"
               onPress={handleSaveBudget}
               loading={saveBudgetMutation.isPending}
-              style={{ marginTop: 12 }}
+              style={{ marginTop: 8 }}
             />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

@@ -8,7 +8,7 @@ BEGIN
         [CategoryId]      BIGINT         NULL,
         [Amount]          DECIMAL(18,2)  NULL,
         [TransactionType] TINYINT        NULL,
-        [TxnDate]         DATE           NULL,
+        [TxnDate]         DATETIME       NULL,
         [Action]          VARCHAR(20)    NOT NULL, -- INSERT / UPDATE / SOFTDELETE
         [ActionOn]        DATETIME       NOT NULL DEFAULT GETUTCDATE(),
         [ActionBy]        BIGINT         NOT NULL

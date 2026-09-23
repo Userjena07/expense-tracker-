@@ -48,7 +48,7 @@ BEGIN
     WHERE t.[UserId] = @RequestedBy
       AND t.[TransactionType] = @TransactionType
       AND t.[TxnDate] >= @StartDate
-      AND t.[TxnDate] <= @EndDate
+      AND t.[TxnDate] < DATEADD(DAY, 1, @EndDate)
       AND t.[IsDeleted] = 0;
 
     SELECT 1 AS [Status], 'SUMMARY_CATEGORY_SUCCESS' AS [MessageCode];
@@ -69,7 +69,7 @@ BEGIN
     WHERE t.[UserId] = @RequestedBy
       AND t.[TransactionType] = @TransactionType
       AND t.[TxnDate] >= @StartDate
-      AND t.[TxnDate] <= @EndDate
+      AND t.[TxnDate] < DATEADD(DAY, 1, @EndDate)
       AND t.[IsDeleted] = 0
     GROUP BY c.[Id], c.[Name], c.[Icon], c.[ColorHex]
     ORDER BY [TotalAmount] DESC;

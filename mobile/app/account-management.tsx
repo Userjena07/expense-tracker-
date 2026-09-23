@@ -8,6 +8,8 @@ import {
   Modal,
   TextInput,
   Alert,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -197,108 +199,127 @@ export default function AccountManagementScreen() {
 
       {/* Add / Edit Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text, fontSize: typography.lg }]}>
-                {editingAccount ? 'Edit Account' : 'New Account / Wallet'}
-              </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <X size={20} color={colors.text} />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]}
+          >
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text, fontSize: typography.lg }]}>
+                  {editingAccount ? 'Edit Account' : 'New Account / Wallet'}
+                </Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <X size={20} color={colors.text} />
+                </TouchableOpacity>
+              </View>
 
-            <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>ACCOUNT TYPE</Text>
-            <View style={styles.typesRow}>
-              {accountTypesList.map((t) => {
-                const isSelected = accountType === t.type;
-                return (
-                  <TouchableOpacity
-                    key={t.type}
-                    onPress={() => {
-                      setAccountType(t.type);
-                      setSelectedIcon(t.icon);
-                    }}
+              <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>ACCOUNT TYPE</Text>
+              <View style={styles.typesRow}>
+                {accountTypesList.map((t) => {
+                  const isSelected = accountType === t.type;
+                  return (
+                    <TouchableOpacity
+                      key={t.type}
+                      onPress={() => {
+                        setAccountType(t.type);
+                        setSelectedIcon(t.icon);
+                      }}
+                      style={[
+                        styles.typeChip,
+                        {
+                          backgroundColor: isSelected ? colors.accent : colors.inputBg,
+                          borderColor: isSelected ? colors.accent : colors.cardBorder,
+                          borderRadius: radius.md,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: isSelected ? '#FFFFFF' : colors.text,
+                          fontWeight: isSelected ? '700' : '500',
+                          fontSize: typography.xs,
+                        }}
+                      >
+                        {t.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>NAME</Text>
+              <TextInput
+                placeholder="e.g. HDFC Bank, Cash Wallet, Pocket Money"
+                placeholderTextColor={colors.textMuted}
+                value={name}
+                onChangeText={setName}
+                style={[
+                  styles.textInput,
+                  { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.cardBorder },
+                ]}
+              />
+
+              {!editingAccount && (
+                <>
+                  <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>
+                    OPENING BALANCE ({currencySymbol})
+                  </Text>
+                  <TextInput
+                    placeholder="0.00"
+                    placeholderTextColor={colors.textMuted}
+                    value={openingBalance}
+                    onChangeText={setOpeningBalance}
+                    keyboardType="numeric"
                     style={[
-                      styles.typeChip,
+                      styles.textInput,
+                      { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.cardBorder },
+                    ]}
+                  />
+                </>
+              )}
+
+              <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>COLOR THEME</Text>
+              <View style={styles.colorRow}>
+                {colorPalette.map((col) => (
+                  <TouchableOpacity
+                    key={col}
+                    onPress={() => setSelectedColor(col)}
+                    style={[
+                      styles.colorCircle,
                       {
-                        backgroundColor: isSelected ? colors.accent : colors.inputBg,
-                        borderColor: isSelected ? colors.accent : colors.cardBorder,
-                        borderRadius: radius.md,
+                        backgroundColor: col,
+                        borderWidth: selectedColor === col ? 3 : 0,
+                        borderColor: '#FFFFFF',
                       },
                     ]}
-                  >
-                    <Text
-                      style={{
-                        color: isSelected ? '#FFFFFF' : colors.text,
-                        fontWeight: isSelected ? '700' : '500',
-                        fontSize: typography.xs,
-                      }}
-                    >
-                      {t.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                  />
+                ))}
+              </View>
 
-            <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>NAME</Text>
-            <TextInput
-              placeholder="e.g. HDFC Bank, Cash Wallet, Pocket Money"
-              placeholderTextColor={colors.textMuted}
-              value={name}
-              onChangeText={setName}
-              style={[
-                styles.textInput,
-                { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.cardBorder },
-              ]}
-            />
-
-            {!editingAccount && (
-              <>
-                <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>
-                  OPENING BALANCE ({currencySymbol})
-                </Text>
-                <TextInput
-                  placeholder="0.00"
-                  placeholderTextColor={colors.textMuted}
-                  value={openingBalance}
-                  onChangeText={setOpeningBalance}
-                  keyboardType="numeric"
-                  style={[
-                    styles.textInput,
-                    { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.cardBorder },
-                  ]}
-                />
-              </>
-            )}
-
-            <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>COLOR THEME</Text>
-            <View style={styles.colorRow}>
-              {colorPalette.map((col) => (
-                <TouchableOpacity
-                  key={col}
-                  onPress={() => setSelectedColor(col)}
-                  style={[
-                    styles.colorCircle,
-                    {
-                      backgroundColor: col,
-                      borderWidth: selectedColor === col ? 3 : 0,
-                      borderColor: '#FFFFFF',
-                    },
-                  ]}
-                />
-              ))}
-            </View>
-
-            <Button
-              title={editingAccount ? 'Update Account' : 'Save Account'}
-              onPress={handleSave}
-              loading={saveMutation.isPending}
-              style={{ marginTop: 16 }}
-            />
+              <Button
+                title={editingAccount ? 'Update Account' : 'Save Account'}
+                onPress={handleSave}
+                loading={saveMutation.isPending}
+                style={{ marginTop: 16 }}
+              />
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

@@ -50,7 +50,7 @@ BEGIN
     FROM [dbo].[Transaction]
     WHERE [UserId] = @RequestedBy
       AND [TxnDate] >= @StartDate
-      AND [TxnDate] <= @EndDate
+      AND [TxnDate] < DATEADD(DAY, 1, @EndDate)
       AND [IsDeleted] = 0;
 
     -- Total Budget for this month

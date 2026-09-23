@@ -7,23 +7,29 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
-  User,
   Moon,
   Sun,
   Coins,
-  Calendar,
   Layers,
   Tag,
   ShieldCheck,
   FileSpreadsheet,
   LogOut,
   ChevronRight,
+  KeyRound,
+  Copy,
+  Check,
+  Eye,
+  EyeOff,
 } from 'lucide-react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useTheme } from '../../theme/useTheme';
@@ -37,10 +43,22 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { colors, typography, radius, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { user, logout, updateUser } = useAuthStore();
+  const { user, secretKey, logout, updateUser } = useAuthStore();
   const { theme, setTheme, currency, setCurrency } = useSettingsStore();
 
   const [biometricEnabled, setBiometricEnabled] = useState(user?.isBiometricOn ?? false);
+  const [showSecretKey, setShowSecretKey] = useState(false);
+  const [copiedKey, setCopiedKey] = useState(false);
+
+  const handleCopySecretKey = async () => {
+    if (!secretKey) return;
+    await Clipboard.setStringAsync(secretKey);
+    setCopiedKey(true);
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {}
+    setTimeout(() => setCopiedKey(false), 3000);
+  };
 
   const toggleBiometric = async (value: boolean) => {
     if (value) {
@@ -240,6 +258,73 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
+        {/* Secret Key Recovery Section */}
+        {secretKey ? (
+          <>
+            <Text style={[styles.sectionHeading, { color: colors.textSecondary, fontSize: typography.xs }]}>
+              ACCOUNT RECOVERY & BACKUP
+            </Text>
+            <Card style={[styles.keyRecoveryCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+              <View style={styles.keyRecoveryHeader}>
+                <View style={[styles.iconWrapper, { backgroundColor: `${colors.accent}20` }]}>
+                  <KeyRound size={18} color={colors.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.settingLabel, { color: colors.text, fontSize: typography.base }]}>
+                    Secret Recovery Key
+                  </Text>
+                  <Text style={[styles.keyHintText, { color: colors.textSecondary, fontSize: typography.xs }]}>
+                    Use this key to restore your account on a new phone.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setShowSecretKey(!showSecretKey)}
+                  style={styles.eyeBtn}
+                  activeOpacity={0.7}
+                >
+                  {showSecretKey ? (
+                    <EyeOff size={18} color={colors.textSecondary} />
+                  ) : (
+                    <Eye size={18} color={colors.textSecondary} />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <View style={[styles.keyDisplayRow, { backgroundColor: colors.inputBg, borderColor: colors.cardBorder }]}>
+                <Text
+                  selectable
+                  style={[
+                    styles.keyDisplayValue,
+                    {
+                      color: colors.text,
+                      fontSize: typography.sm,
+                      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+                    },
+                  ]}
+                >
+                  {showSecretKey
+                    ? secretKey
+                    : `${secretKey.slice(0, 4)}-••••-••••-${secretKey.slice(-4)}`}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={handleCopySecretKey}
+                  style={[
+                    styles.copyKeyPill,
+                    { backgroundColor: copiedKey ? colors.income : colors.accent },
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  {copiedKey ? <Check size={14} color="#FFFFFF" /> : <Copy size={14} color="#FFFFFF" />}
+                  <Text style={styles.copyKeyPillText}>
+                    {copiedKey ? 'Copied' : 'Copy'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
+          </>
+        ) : null}
+
         {/* Data & Management Section */}
         <Text style={[styles.sectionHeading, { color: colors.textSecondary, fontSize: typography.xs }]}>
           DATA & MANAGEMENT
@@ -423,6 +508,50 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontWeight: '700',
+  },
+  keyRecoveryCard: {
+    padding: 14,
+    marginBottom: 20,
+  },
+  keyRecoveryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  keyHintText: {
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  eyeBtn: {
+    padding: 6,
+  },
+  keyDisplayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  keyDisplayValue: {
+    fontWeight: '700',
+    letterSpacing: 1,
+    flex: 1,
+  },
+  copyKeyPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  copyKeyPillText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 12,
   },
   versionText: {
     textAlign: 'center',

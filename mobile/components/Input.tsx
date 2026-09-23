@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TextInputProps,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from '../theme/useTheme';
@@ -41,10 +42,10 @@ export const Input: React.FC<InputProps> = ({
           styles.inputWrapper,
           {
             backgroundColor: colors.inputBg,
-            borderColor: error
-              ? colors.danger
-              : isFocused
+            borderColor: isFocused
               ? colors.accent
+              : error
+              ? colors.danger
               : colors.cardBorder,
             borderRadius: radius.md,
           },
@@ -62,6 +63,15 @@ export const Input: React.FC<InputProps> = ({
               color: colors.text,
               fontSize: typography.base,
               paddingLeft: icon ? 0 : spacing.md,
+              ...(Platform.OS === 'web'
+                ? ({
+                    outline: 'none',
+                    outlineStyle: 'none',
+                    outlineWidth: 0,
+                    outlineColor: 'transparent',
+                    boxShadow: 'none',
+                  } as any)
+                : {}),
             },
             style,
           ]}

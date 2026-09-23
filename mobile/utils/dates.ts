@@ -15,6 +15,31 @@ export function formatTransactionDate(dateStr: string): string {
   }
 }
 
+export function formatTransactionTime(dateStr: string): string {
+  try {
+    const date = typeof dateStr === 'string' ? parseISO(dateStr) : new Date(dateStr);
+    return format(date, 'h:mm a');
+  } catch {
+    return '';
+  }
+}
+
+export function formatTransactionDateTime(dateStr: string): string {
+  try {
+    const date = typeof dateStr === 'string' ? parseISO(dateStr) : new Date(dateStr);
+    const timeStr = format(date, 'h:mm a');
+    if (isToday(date)) {
+      return `Today, ${timeStr}`;
+    }
+    if (isYesterday(date)) {
+      return `Yesterday, ${timeStr}`;
+    }
+    return `${format(date, 'd MMM')}, ${timeStr}`;
+  } catch {
+    return dateStr;
+  }
+}
+
 export function formatShortDate(dateStr: string): string {
   try {
     const date = typeof dateStr === 'string' ? parseISO(dateStr) : new Date(dateStr);
@@ -31,3 +56,4 @@ export function getCurrentMonthName(month: number): string {
   ];
   return months[month - 1] || '';
 }
+

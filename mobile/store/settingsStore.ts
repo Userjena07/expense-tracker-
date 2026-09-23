@@ -26,7 +26,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
-  theme: 'dark',
+  theme: 'light',
   currency: 'INR',
   currencySymbol: '₹',
   hasSeenOnboarding: false,
@@ -53,7 +53,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       if (data) {
         const parsed = JSON.parse(data);
         set({
-          theme: parsed.theme || 'dark',
+          theme: parsed.theme || 'light',
           currency: parsed.currency || 'INR',
           currencySymbol: CURRENCY_SYMBOLS[parsed.currency || 'INR'] || '₹',
           hasSeenOnboarding: parsed.hasSeenOnboarding ?? false,

@@ -11,7 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Check, ArrowRightLeft } from 'lucide-react-native';
+import { X, Check, ArrowRightLeft, Clock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../theme/useTheme';
 import { useSettingsStore } from '../store/settingsStore';
@@ -22,6 +22,7 @@ import { AmountKeypad } from '../components/AmountKeypad';
 import { CategoryChip } from '../components/CategoryChip';
 import { Button } from '../components/Button';
 import { TransactionType } from '../types/api';
+import { formatTransactionTime } from '../utils/dates';
 
 export default function AddTransactionModal() {
   const router = useRouter();
@@ -38,20 +39,32 @@ export default function AddTransactionModal() {
   const [targetAccountId, setTargetAccountId] = useState<string>('');
   const [dateOption, setDateOption] = useState<'today' | 'yesterday' | 'custom'>('today');
   const [customDate, setCustomDate] = useState(() => new Date().toISOString().split('T')[0]);
+  
+  // Time state (defaults to current local time)
+  const now = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const [customTime, setCustomTime] = useState(() => `${pad(now.getHours())}:${pad(now.getMinutes())}`);
+  const [showTimeEdit, setShowTimeEdit] = useState(false);
+
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
 
-  // Calculate actual transaction date
+  // Calculate actual transaction date & time
   const getSelectedTxnDate = () => {
-    if (dateOption === 'today') {
-      return new Date().toISOString().split('T')[0];
-    }
+    const [hours, minutes] = (customTime || '').split(':').map((v) => parseInt(v, 10) || 0);
+    const targetDate = new Date();
+
     if (dateOption === 'yesterday') {
-      const d = new Date();
-      d.setDate(d.getDate() - 1);
-      return d.toISOString().split('T')[0];
+      targetDate.setDate(targetDate.getDate() - 1);
+    } else if (dateOption === 'custom' && customDate) {
+      const parts = customDate.split('-');
+      if (parts.length === 3) {
+        targetDate.setFullYear(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      }
     }
-    return customDate || new Date().toISOString().split('T')[0];
+
+    targetDate.setHours(hours, minutes, 0, 0);
+    return targetDate.toISOString();
   };
 
   // Fetch accounts & categories
@@ -253,19 +266,33 @@ export default function AddTransactionModal() {
           </TouchableOpacity>
         </View>
 
-        {error ? (
-          <View style={[styles.errorBanner, { backgroundColor: `${colors.danger}20`, borderColor: colors.danger }]}>
-            <Text style={[styles.errorText, { color: colors.danger, fontSize: typography.xs }]}>{error}</Text>
-          </View>
-        ) : null}
-
         {/* Big Amount Keypad */}
         <AmountKeypad value={amountStr} onChange={setAmountStr} currencySymbol={currencySymbol} />
 
-        {/* Date Selector */}
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary, fontSize: typography.xs }]}>
-          TRANSACTION DATE
-        </Text>
+        {/* Date & Time Selector */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary, fontSize: typography.xs, marginTop: 0, marginBottom: 0 }]}>
+            TRANSACTION DATE & TIME
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowTimeEdit(!showTimeEdit)}
+            activeOpacity={0.7}
+            style={[
+              styles.timeBadge,
+              {
+                backgroundColor: showTimeEdit ? `${colors.accent}20` : colors.card,
+                borderColor: showTimeEdit ? colors.accent : colors.cardBorder,
+                borderRadius: radius.full,
+              },
+            ]}
+          >
+            <Clock size={13} color={colors.accent} />
+            <Text style={[styles.timeBadgeText, { color: colors.accent, fontSize: typography.xs }]}>
+              {formatTransactionTime(getSelectedTxnDate()) || customTime}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.dateSelectorRow}>
           <TouchableOpacity
             style={[
@@ -350,6 +377,52 @@ export default function AddTransactionModal() {
               },
             ]}
           />
+        )}
+
+        {showTimeEdit && (
+          <View
+            style={[
+              styles.timeEditorBox,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+                borderRadius: radius.md,
+              },
+            ]}
+          >
+            <View style={styles.timeEditorHeader}>
+              <Text style={{ color: colors.textSecondary, fontSize: typography.xs, fontWeight: '700' }}>
+                CUSTOM TIME (HH:mm)
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  const cur = new Date();
+                  setCustomTime(`${pad(cur.getHours())}:${pad(cur.getMinutes())}`);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ color: colors.accent, fontSize: typography.xs, fontWeight: '700' }}>
+                  Set to Now 🕒
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              placeholder="e.g. 14:30 or 09:15"
+              placeholderTextColor={colors.textMuted}
+              value={customTime}
+              onChangeText={setCustomTime}
+              style={[
+                styles.customDateInput,
+                {
+                  backgroundColor: colors.inputBg,
+                  color: colors.text,
+                  borderColor: colors.accent,
+                  borderRadius: radius.md,
+                  marginBottom: 0,
+                },
+              ]}
+            />
+          </View>
         )}
 
         {/* Account Selector Chips */}
@@ -503,6 +576,12 @@ export default function AddTransactionModal() {
           ]}
         />
 
+        {error ? (
+          <Text style={[styles.errorText, { color: colors.danger, fontSize: typography.sm }]}>
+            * {error}
+          </Text>
+        ) : null}
+
         {/* Save Button */}
         <Button
           title={`Save ${txnType === TransactionType.Income ? 'Income' : txnType === TransactionType.Transfer ? 'Transfer' : 'Expense'}`}
@@ -556,16 +635,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
   },
-  errorBanner: {
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginVertical: 8,
-  },
-  errorText: {
-    fontWeight: '600',
-    textAlign: 'center',
-  },
   sectionLabel: {
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -587,6 +656,35 @@ const styles = StyleSheet.create({
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  timeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+  },
+  timeBadgeText: {
+    fontWeight: '700',
+  },
+  timeEditorBox: {
+    padding: 12,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  timeEditorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   dateSelectorRow: {
     flexDirection: 'row',
@@ -627,6 +725,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     fontSize: 14,
     marginBottom: 20,
+  },
+  errorText: {
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
   },
   saveBtn: {
     marginTop: 8,

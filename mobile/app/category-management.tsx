@@ -8,10 +8,12 @@ import {
   Modal,
   TextInput,
   Alert,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, X } from 'lucide-react-native';
+import { Trash2, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../theme/useTheme';
 import { categoryService } from '../services/categoryService';
@@ -219,78 +221,97 @@ export default function CategoryManagementScreen() {
 
       {/* Add / Edit Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text, fontSize: typography.lg }]}>
-                {editingCategory ? 'Edit Category' : 'New Category'}
-              </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <X size={20} color={colors.text} />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]}
+          >
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text, fontSize: typography.lg }]}>
+                  {editingCategory ? 'Edit Category' : 'New Category'}
+                </Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <X size={20} color={colors.text} />
+                </TouchableOpacity>
+              </View>
 
-            <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>NAME</Text>
-            <TextInput
-              placeholder="e.g. Subscriptions, Groceries, Sneakers"
-              placeholderTextColor={colors.textMuted}
-              value={name}
-              onChangeText={setName}
-              style={[
-                styles.textInput,
-                { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.cardBorder },
-              ]}
-            />
+              <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>NAME</Text>
+              <TextInput
+                placeholder="e.g. Subscriptions, Groceries, Sneakers"
+                placeholderTextColor={colors.textMuted}
+                value={name}
+                onChangeText={setName}
+                style={[
+                  styles.textInput,
+                  { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.cardBorder },
+                ]}
+              />
 
-            <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>SELECT ICON</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.iconScroll}>
-              {iconOptions.map((ico) => {
-                const isSelected = selectedIcon === ico;
-                return (
+              <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>SELECT ICON</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.iconScroll}>
+                {iconOptions.map((ico) => {
+                  const isSelected = selectedIcon === ico;
+                  return (
+                    <TouchableOpacity
+                      key={ico}
+                      onPress={() => setSelectedIcon(ico)}
+                      style={[
+                        styles.iconSelectBtn,
+                        {
+                          backgroundColor: isSelected ? `${selectedColor}30` : colors.inputBg,
+                          borderColor: isSelected ? selectedColor : colors.cardBorder,
+                          borderRadius: radius.md,
+                        },
+                      ]}
+                    >
+                      <CategoryIcon name={ico} size={22} color={isSelected ? selectedColor : colors.textSecondary} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>COLOR PALETTE</Text>
+              <View style={styles.colorRow}>
+                {colorPalette.map((col) => (
                   <TouchableOpacity
-                    key={ico}
-                    onPress={() => setSelectedIcon(ico)}
+                    key={col}
+                    onPress={() => setSelectedColor(col)}
                     style={[
-                      styles.iconSelectBtn,
+                      styles.colorCircle,
                       {
-                        backgroundColor: isSelected ? `${selectedColor}30` : colors.inputBg,
-                        borderColor: isSelected ? selectedColor : colors.cardBorder,
-                        borderRadius: radius.md,
+                        backgroundColor: col,
+                        borderWidth: selectedColor === col ? 3 : 0,
+                        borderColor: '#FFFFFF',
                       },
                     ]}
-                  >
-                    <CategoryIcon name={ico} size={22} color={isSelected ? selectedColor : colors.textSecondary} />
-                  </TouchableOpacity>
-                );
-              })}
+                  />
+                ))}
+              </View>
+
+              <Button
+                title={editingCategory ? 'Update Category' : 'Save Category'}
+                onPress={handleSave}
+                loading={saveMutation.isPending}
+                style={{ marginTop: 16 }}
+              />
             </ScrollView>
-
-            <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.xs }]}>COLOR PALETTE</Text>
-            <View style={styles.colorRow}>
-              {colorPalette.map((col) => (
-                <TouchableOpacity
-                  key={col}
-                  onPress={() => setSelectedColor(col)}
-                  style={[
-                    styles.colorCircle,
-                    {
-                      backgroundColor: col,
-                      borderWidth: selectedColor === col ? 3 : 0,
-                      borderColor: '#FFFFFF',
-                    },
-                  ]}
-                />
-              ))}
-            </View>
-
-            <Button
-              title={editingCategory ? 'Update Category' : 'Save Category'}
-              onPress={handleSave}
-              loading={saveMutation.isPending}
-              style={{ marginTop: 16 }}
-            />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

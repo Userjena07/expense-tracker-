@@ -26,7 +26,7 @@ CREATE OR ALTER PROCEDURE [dbo].[PRO_SaveTransaction]
     @CategoryId      BIGINT        = 0,
     @Amount          DECIMAL(18,2) = 0,
     @TransactionType TINYINT       = 1, -- 1 Expense, 2 Income, 3 Transfer
-    @TxnDate         DATE          = NULL,
+    @TxnDate         DATETIME      = NULL,
     @Note            NVARCHAR(300) = NULL,
     @TargetAccountId BIGINT        = NULL,
     @ClientTxnId     VARCHAR(50)   = NULL
@@ -76,7 +76,7 @@ BEGIN
     END
 
     IF @TxnDate IS NULL
-        SET @TxnDate = CAST(GETUTCDATE() AS DATE);
+        SET @TxnDate = GETUTCDATE();
 
     DECLARE @Now DATETIME = GETUTCDATE();
 

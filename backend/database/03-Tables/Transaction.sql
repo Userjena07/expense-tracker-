@@ -7,7 +7,7 @@ BEGIN
         [CategoryId]      BIGINT         NOT NULL,
         [Amount]          DECIMAL(18,2)  NOT NULL,
         [TransactionType] TINYINT        NOT NULL DEFAULT 1, -- 1 Expense, 2 Income, 3 Transfer
-        [TxnDate]         DATE           NOT NULL,
+        [TxnDate]         DATETIME       NOT NULL,
         [Note]            NVARCHAR(300)  NULL,
         [TargetAccountId] BIGINT         NULL, -- For transfer transactions
         [ClientTxnId]     VARCHAR(50)    NULL, -- Client GUID for offline sync & idempotency

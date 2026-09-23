@@ -15,9 +15,6 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Sparkles,
-  ChevronRight,
-  TrendingUp,
-  Wallet,
 } from 'lucide-react-native';
 import { useTheme } from '../../theme/useTheme';
 import { useAuthStore } from '../../store/authStore';
@@ -26,7 +23,7 @@ import { summaryService } from '../../services/summaryService';
 import { accountService } from '../../services/accountService';
 import { transactionService } from '../../services/transactionService';
 import { formatCurrency } from '../../utils/money';
-import { formatShortDate } from '../../utils/dates';
+import { formatShortDate, formatTransactionDateTime } from '../../utils/dates';
 import { Card } from '../../components/Card';
 import { CategoryIcon } from '../../components/CategoryIcon';
 import { EmptyState } from '../../components/EmptyState';
@@ -301,7 +298,7 @@ export default function DashboardScreen() {
                         {txn.categoryName || 'General'}
                       </Text>
                       <Text style={[styles.txnSubtitle, { color: colors.textSecondary, fontSize: typography.xs }]}>
-                        {txn.accountName} • {formatShortDate(txn.txnDate)}
+                        {txn.accountName} • {formatTransactionDateTime(txn.txnDate)}
                         {txn.note ? ` • ${txn.note}` : ''}
                       </Text>
                     </View>

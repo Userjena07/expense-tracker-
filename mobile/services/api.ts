@@ -49,7 +49,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Don't attempt refresh for auth endpoints (login, register, refresh)
+    const isAuthEndpoint = originalRequest?.url?.includes('/api/auth/');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
       const refreshToken = useAuthStore.getState().refreshToken;
 
@@ -66,8 +69,8 @@ apiClient.interceptors.response.use(
             originalRequest.headers.Authorization = `Bearer ${accessToken}`;
             return apiClient(originalRequest);
           }
-        } catch (refreshErr) {
-          console.error('Refresh token failed:', refreshErr);
+        } catch {
+          // Token expired or invalid, log out quietly without LogBox toast
           await useAuthStore.getState().logout();
         }
       } else {

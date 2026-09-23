@@ -25,7 +25,7 @@ import { useTheme } from '../../theme/useTheme';
 import { useSettingsStore } from '../../store/settingsStore';
 import { transactionService } from '../../services/transactionService';
 import { formatCurrency } from '../../utils/money';
-import { formatTransactionDate } from '../../utils/dates';
+import { formatTransactionDate, formatTransactionTime } from '../../utils/dates';
 import { Card } from '../../components/Card';
 import { CategoryIcon } from '../../components/CategoryIcon';
 import { EmptyState } from '../../components/EmptyState';
@@ -281,6 +281,7 @@ export default function TransactionsScreen() {
                       <Text style={[styles.accountDetail, { color: colors.textSecondary, fontSize: typography.xs }]}>
                         {txn.accountName}
                         {isTransfer && txn.targetAccountName ? ` ➔ ${txn.targetAccountName}` : ''}
+                        {txn.txnDate ? ` • ${formatTransactionTime(txn.txnDate)}` : ''}
                         {txn.note ? ` • ${txn.note}` : ''}
                       </Text>
                     </View>

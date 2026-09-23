@@ -69,7 +69,7 @@ BEGIN
     WHERE t.[UserId] = @RequestedBy
       AND t.[IsDeleted] = 0
       AND (@FromDate IS NULL OR t.[TxnDate] >= @FromDate)
-      AND (@ToDate IS NULL OR t.[TxnDate] <= @ToDate)
+      AND (@ToDate IS NULL OR t.[TxnDate] < DATEADD(DAY, 1, @ToDate))
       AND (@CategoryId = 0 OR t.[CategoryId] = @CategoryId)
       AND (@AccountId = 0 OR t.[AccountId] = @AccountId OR t.[TargetAccountId] = @AccountId)
       AND (@TransactionType = 0 OR t.[TransactionType] = @TransactionType)

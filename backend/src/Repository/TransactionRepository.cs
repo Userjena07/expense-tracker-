@@ -109,7 +109,7 @@ public class TransactionRepository : BaseRepository, ITransactionRepository
         parameters.Add("@CategoryId", transaction.CategoryId);
         parameters.Add("@Amount", transaction.Amount);
         parameters.Add("@TransactionType", (byte)transaction.TransactionType);
-        parameters.Add("@TxnDate", transaction.TxnDate.Date);
+        parameters.Add("@TxnDate", transaction.TxnDate);
         parameters.Add("@Note", transaction.Note);
         parameters.Add("@TargetAccountId", transaction.TargetAccountId);
         parameters.Add("@ClientTxnId", transaction.ClientTxnId);

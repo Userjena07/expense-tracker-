@@ -5,37 +5,34 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Mail, Lock, LogIn } from 'lucide-react-native';
+import { KeyRound, ArrowRight, Sun, Moon } from 'lucide-react-native';
 import { useTheme } from '../../theme/useTheme';
 import { useAuthStore } from '../../store/authStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import { authService } from '../../services/authService';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
+import { Card } from '../../components/Card';
 
-export default function LoginScreen() {
+export default function RestoreAccountScreen() {
   const router = useRouter();
-  const { colors, typography } = useTheme();
+  const { colors, typography, radius, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const { setCurrency, setTheme } = useSettingsStore();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [secretKey, setSecretKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = async () => {
-    if (!email.trim()) {
-      setError('Please enter your email address');
-      return;
-    }
-    if (!password) {
-      setError('Please enter your password');
+  const handleRestore = async () => {
+    if (!secretKey.trim()) {
+      setError('Please enter your Secret Recovery Key');
       return;
     }
 
@@ -43,20 +40,20 @@ export default function LoginScreen() {
       setLoading(true);
       setError('');
 
-      const res = await authService.login({
-        email: email.trim(),
-        password,
-      });
+      const res = await authService.restoreAccountWithSecret(secretKey.trim());
 
       if (res.success && res.data) {
         const { user, accessToken, refreshToken } = res.data;
-        await setAuth(user, accessToken, refreshToken);
+        if (user.currencyCode) {
+          setCurrency(user.currencyCode);
+        }
+        await setAuth(user, accessToken, refreshToken, secretKey.trim().toUpperCase());
         router.replace('/(tabs)');
       } else {
-        setError(res.message || 'Invalid email or password');
+        setError(res.message || 'Invalid Secret Key. Please check and try again.');
       }
     } catch (err: any) {
-      const errMsg = err.response?.data?.message || err.message || 'Login failed. Please check your network.';
+      const errMsg = err.response?.data?.message || err.message || 'Unable to restore account. Please check network.';
       setError(errMsg);
     } finally {
       setLoading(false);
@@ -84,68 +81,68 @@ export default function LoginScreen() {
           ]}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
+          <View style={styles.topRow}>
             <Text style={[styles.brandName, { color: colors.accent, fontSize: typography.lg }]}>
               Expense<Text style={{ color: colors.text }}>Tracker</Text>
             </Text>
+            <TouchableOpacity
+              onPress={() => setTheme(isDark ? 'light' : 'dark')}
+              activeOpacity={0.7}
+              style={[
+                styles.themeToggleBtn,
+                { backgroundColor: colors.card, borderColor: colors.cardBorder },
+              ]}
+            >
+              {isDark ? <Sun size={18} color={colors.accent} /> : <Moon size={18} color={colors.accent} />}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.header}>
             <Text style={[styles.welcomeTitle, { color: colors.text, fontSize: typography.title }]}>
-              Welcome back! 👋
+              Restore Account 🔑
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: typography.base }]}>
-              Sign in to manage your money and check your daily budget.
+              Enter your Secret Recovery Key to instantly recover your data, transactions, and categories.
             </Text>
           </View>
 
           <View style={styles.form}>
-            {error ? (
-              <View style={[styles.errorBanner, { backgroundColor: `${colors.danger}20`, borderColor: colors.danger }]}>
-                <Text style={[styles.errorText, { color: colors.danger, fontSize: typography.sm }]}>
-                  {error}
-                </Text>
-              </View>
-            ) : null}
-
             <Input
-              label="Email Address"
-              placeholder="name@example.com"
-              value={email}
+              label="Secret Recovery Key"
+              placeholder="e.g. EXP-ABCD-1234-EFGH"
+              value={secretKey}
+              error={error}
               onChangeText={(t) => {
-                setEmail(t);
+                setSecretKey(t.toUpperCase());
                 setError('');
               }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              icon={<Mail size={20} color={colors.textSecondary} />}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              icon={<KeyRound size={20} color={colors.textSecondary} />}
             />
 
-            <Input
-              label="Password"
-              placeholder="••••••••"
-              value={password}
-              onChangeText={(t) => {
-                setPassword(t);
-                setError('');
-              }}
-              isPassword
-              icon={<Lock size={20} color={colors.textSecondary} />}
-            />
+            <Card style={[styles.hintBox, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+              <Text style={[styles.hintText, { color: colors.textSecondary, fontSize: typography.xs }]}>
+                💡 Your Secret Key was shown when you first installed ExpenseTracker. It can also be found in Settings on your previous device.
+              </Text>
+            </Card>
 
             <Button
-              title="Sign In"
-              onPress={handleLogin}
+              title="Restore My Data"
+              onPress={handleRestore}
               loading={loading}
-              icon={<LogIn size={18} color="#FFFFFF" />}
+              icon={<ArrowRight size={18} color="#FFFFFF" />}
               style={styles.loginBtn}
             />
           </View>
 
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: colors.textSecondary, fontSize: typography.sm }]}>
-              Don't have an account yet?{' '}
+              New to ExpenseTracker?{' '}
             </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')} activeOpacity={0.7}>
               <Text style={[styles.signUpLink, { color: colors.accent, fontSize: typography.sm }]}>
-                Create Account
+                Create New Account
               </Text>
             </TouchableOpacity>
           </View>
@@ -165,13 +162,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
   },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    marginBottom: 8,
+  },
+  themeToggleBtn: {
+    padding: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
   header: {
-    paddingTop: 16,
-    marginBottom: 28,
+    marginBottom: 24,
   },
   brandName: {
     fontWeight: '900',
-    marginBottom: 12,
+    marginBottom: 0,
   },
   welcomeTitle: {
     fontWeight: '800',
@@ -193,6 +201,13 @@ const styles = StyleSheet.create({
   errorText: {
     fontWeight: '600',
     textAlign: 'center',
+  },
+  hintBox: {
+    padding: 12,
+    marginBottom: 16,
+  },
+  hintText: {
+    lineHeight: 18,
   },
   loginBtn: {
     marginTop: 8,
