@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -6,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useTheme } from '../theme/useTheme';
+import { LockScreen } from '../components/LockScreen';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,11 +19,31 @@ const queryClient = new QueryClient({
 });
 
 function RootNavigation() {
-  const { isAuthenticated, isLoading, isLocked } = useAuthStore();
+  const { isAuthenticated, isLoading, isLocked, user, setLocked } = useAuthStore();
   const { hasSeenOnboarding } = useSettingsStore();
   const segments = useSegments();
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const appState = useRef(AppState.currentState);
+
+  // AppState listener for background/active locking
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        if (user?.isBiometricOn) {
+          setLocked(true);
+        }
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [user]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -64,6 +86,8 @@ function RootNavigation() {
         <Stack.Screen name="account-management" options={{ headerShown: false }} />
         <Stack.Screen name="category-management" options={{ headerShown: false }} />
       </Stack>
+
+      {isAuthenticated && isLocked && <LockScreen />}
     </>
   );
 }

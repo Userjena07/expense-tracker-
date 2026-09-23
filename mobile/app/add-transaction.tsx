@@ -33,10 +33,26 @@ export default function AddTransactionModal() {
   const [txnType, setTxnType] = useState<TransactionType>(TransactionType.Expense);
   const [amountStr, setAmountStr] = useState('0');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [customCategoryName, setCustomCategoryName] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [targetAccountId, setTargetAccountId] = useState<string>('');
+  const [dateOption, setDateOption] = useState<'today' | 'yesterday' | 'custom'>('today');
+  const [customDate, setCustomDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
+
+  // Calculate actual transaction date
+  const getSelectedTxnDate = () => {
+    if (dateOption === 'today') {
+      return new Date().toISOString().split('T')[0];
+    }
+    if (dateOption === 'yesterday') {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return d.toISOString().split('T')[0];
+    }
+    return customDate || new Date().toISOString().split('T')[0];
+  };
 
   // Fetch accounts & categories
   const { data: accounts = [] } = useQuery({
@@ -57,7 +73,7 @@ export default function AddTransactionModal() {
   }, [accounts]);
 
   React.useEffect(() => {
-    if (categories.length > 0 && !selectedCategoryId) {
+    if (categories.length > 0 && !selectedCategoryId && selectedCategoryId !== '__OTHER__') {
       setSelectedCategoryId(categories[0].encryptedId);
     }
   }, [categories]);
@@ -85,7 +101,7 @@ export default function AddTransactionModal() {
     },
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const numAmount = parseFloat(amountStr);
     if (!numAmount || numAmount <= 0) {
       setError('Please enter a valid amount greater than 0');
@@ -99,6 +115,10 @@ export default function AddTransactionModal() {
       setError('Please select a category');
       return;
     }
+    if (selectedCategoryId === '__OTHER__' && !customCategoryName.trim()) {
+      setError('Please enter a name for the custom category');
+      return;
+    }
     if (txnType === TransactionType.Transfer) {
       if (!targetAccountId || targetAccountId === selectedAccountId) {
         setError('Please select a different destination account for transfer');
@@ -107,13 +127,36 @@ export default function AddTransactionModal() {
     }
 
     setError('');
+
+    let catId = selectedCategoryId;
+
+    // Handle saving custom category on the fly if "Other" was selected
+    if (selectedCategoryId === '__OTHER__') {
+      try {
+        const savedList = await categoryService.saveCategory({
+          name: customCategoryName.trim(),
+          icon: 'tag',
+          colorHex: '#8B5CF6',
+          categoryType: txnType === TransactionType.Income ? 2 : 1,
+        });
+        queryClient.invalidateQueries({ queryKey: ['categories-list'] });
+        const created = savedList.find(
+          (c) => c.name?.toLowerCase() === customCategoryName.trim().toLowerCase()
+        );
+        catId = created?.encryptedId || savedList[0]?.encryptedId || '';
+      } catch (catErr: any) {
+        setError('Failed to create custom category');
+        return;
+      }
+    }
+
     saveMutation.mutate({
       encryptedAccountId: selectedAccountId,
-      encryptedCategoryId: txnType === TransactionType.Transfer ? categories[0]?.encryptedId : selectedCategoryId,
+      encryptedCategoryId: txnType === TransactionType.Transfer ? categories[0]?.encryptedId : catId,
       encryptedTargetAccountId: txnType === TransactionType.Transfer ? targetAccountId : undefined,
       amount: numAmount,
       transactionType: txnType,
-      txnDate: new Date().toISOString().split('T')[0],
+      txnDate: getSelectedTxnDate(),
       note: note.trim() || undefined,
     });
   };
@@ -219,6 +262,96 @@ export default function AddTransactionModal() {
         {/* Big Amount Keypad */}
         <AmountKeypad value={amountStr} onChange={setAmountStr} currencySymbol={currencySymbol} />
 
+        {/* Date Selector */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary, fontSize: typography.xs }]}>
+          TRANSACTION DATE
+        </Text>
+        <View style={styles.dateSelectorRow}>
+          <TouchableOpacity
+            style={[
+              styles.dateChip,
+              {
+                backgroundColor: dateOption === 'today' ? `${colors.accent}25` : colors.card,
+                borderColor: dateOption === 'today' ? colors.accent : colors.cardBorder,
+                borderRadius: radius.md,
+              },
+            ]}
+            onPress={() => setDateOption('today')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.dateChipText,
+                { color: dateOption === 'today' ? colors.accent : colors.text, fontWeight: dateOption === 'today' ? '700' : '500' },
+              ]}
+            >
+              📅 Today
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.dateChip,
+              {
+                backgroundColor: dateOption === 'yesterday' ? `${colors.accent}25` : colors.card,
+                borderColor: dateOption === 'yesterday' ? colors.accent : colors.cardBorder,
+                borderRadius: radius.md,
+              },
+            ]}
+            onPress={() => setDateOption('yesterday')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.dateChipText,
+                { color: dateOption === 'yesterday' ? colors.accent : colors.text, fontWeight: dateOption === 'yesterday' ? '700' : '500' },
+              ]}
+            >
+              Yesterday
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.dateChip,
+              {
+                backgroundColor: dateOption === 'custom' ? `${colors.accent}25` : colors.card,
+                borderColor: dateOption === 'custom' ? colors.accent : colors.cardBorder,
+                borderRadius: radius.md,
+              },
+            ]}
+            onPress={() => setDateOption('custom')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.dateChipText,
+                { color: dateOption === 'custom' ? colors.accent : colors.text, fontWeight: dateOption === 'custom' ? '700' : '500' },
+              ]}
+            >
+              Custom Date
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {dateOption === 'custom' && (
+          <TextInput
+            placeholder="YYYY-MM-DD (e.g. 2026-09-20)"
+            placeholderTextColor={colors.textMuted}
+            value={customDate}
+            onChangeText={setCustomDate}
+            style={[
+              styles.customDateInput,
+              {
+                backgroundColor: colors.inputBg,
+                color: colors.text,
+                borderColor: colors.cardBorder,
+                borderRadius: radius.md,
+              },
+            ]}
+          />
+        )}
+
         {/* Account Selector Chips */}
         <Text style={[styles.sectionLabel, { color: colors.textSecondary, fontSize: typography.xs }]}>
           {txnType === TransactionType.Transfer ? 'FROM ACCOUNT' : 'PAY FROM / DEPOSIT TO'}
@@ -305,10 +438,48 @@ export default function AddTransactionModal() {
                   icon={cat.icon}
                   colorHex={cat.colorHex}
                   selected={selectedCategoryId === cat.encryptedId}
-                  onPress={() => setSelectedCategoryId(cat.encryptedId)}
+                  onPress={() => {
+                    setSelectedCategoryId(cat.encryptedId);
+                    setCustomCategoryName('');
+                  }}
                 />
               ))}
+
+              {/* "+ Other" Custom Category Chip */}
+              <CategoryChip
+                name="+ Other / Custom"
+                icon="plus"
+                colorHex="#8B5CF6"
+                selected={selectedCategoryId === '__OTHER__'}
+                onPress={() => setSelectedCategoryId('__OTHER__')}
+              />
             </View>
+
+            {/* Custom Category Input if "Other" selected */}
+            {selectedCategoryId === '__OTHER__' && (
+              <View style={styles.otherCategoryBox}>
+                <Text style={[styles.subLabel, { color: colors.accent, fontSize: typography.xs }]}>
+                  ENTER CUSTOM CATEGORY NAME
+                </Text>
+                <TextInput
+                  placeholder="e.g. Books, Gifts, Pet Care, Repairs"
+                  placeholderTextColor={colors.textMuted}
+                  value={customCategoryName}
+                  onChangeText={setCustomCategoryName}
+                  autoFocus
+                  style={[
+                    styles.noteInput,
+                    {
+                      backgroundColor: colors.inputBg,
+                      color: colors.text,
+                      borderColor: colors.accent,
+                      borderRadius: radius.md,
+                      marginTop: 6,
+                    },
+                  ]}
+                />
+              </View>
+            )}
           </>
         )}
 
@@ -416,6 +587,39 @@ const styles = StyleSheet.create({
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  dateSelectorRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  dateChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1.5,
+  },
+  dateChipText: {
+    fontSize: 13,
+  },
+  customDateInput: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1.5,
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  otherCategoryBox: {
+    width: '100%',
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#8B5CF640',
+    backgroundColor: '#8B5CF610',
+  },
+  subLabel: {
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   noteInput: {
     paddingVertical: 12,
