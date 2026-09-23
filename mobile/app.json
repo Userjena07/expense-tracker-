@@ -7,6 +7,10 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#FFEBB8",
+      "resizeMode": "contain"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -14,7 +18,7 @@
       "package": "com.expensetracker.app",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "backgroundColor": "#181728",
+        "backgroundColor": "#FFEBB8",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
