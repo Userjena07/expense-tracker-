@@ -37,9 +37,22 @@ BEGIN
         c.[UpdatedOn],
         c.[IsActive]
     FROM [dbo].[Category] c
-    WHERE (c.[UserId] = @RequestedBy OR (c.[UserId] = 0 AND c.[IsSystemDefault] = 1))
-      AND c.[IsDeleted] = 0
+    WHERE c.[IsDeleted] = 0
       AND (@CategoryType = 0 OR c.[CategoryType] = @CategoryType)
+      AND (
+        c.[UserId] = @RequestedBy
+        OR (
+          c.[UserId] = 0 
+          AND c.[IsSystemDefault] = 1 
+          AND NOT EXISTS (
+            SELECT 1 FROM [dbo].[Category] uc 
+            WHERE uc.[UserId] = @RequestedBy 
+              AND uc.[IsDeleted] = 0 
+              AND uc.[Name] = c.[Name] 
+              AND uc.[CategoryType] = c.[CategoryType]
+          )
+        )
+      )
     ORDER BY c.[CategoryType] ASC, c.[Name] ASC;
 END
 GO

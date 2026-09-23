@@ -3,12 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { User as UserIcon, Mail, Lock, Sparkles } from 'lucide-react-native';
 import { useTheme } from '../../theme/useTheme';
@@ -114,7 +114,7 @@ export default function RegisterScreen() {
 
             <Input
               label="Your Name"
-              placeholder="e.g. Gautam Jena"
+              placeholder="e.g. John Doe"
               value={fullName}
               onChangeText={(t) => {
                 setFullName(t);

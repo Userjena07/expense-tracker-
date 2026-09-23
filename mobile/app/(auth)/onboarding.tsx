@@ -3,10 +3,10 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   Dimensions,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Zap, ShieldCheck, PieChart, ArrowRight } from 'lucide-react-native';
 import { useTheme } from '../../theme/useTheme';

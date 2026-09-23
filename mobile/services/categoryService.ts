@@ -4,7 +4,14 @@ import { ApiResponse, Category } from '../types/api';
 export const categoryService = {
   async getCategories(categoryType: number = 0): Promise<Category[]> {
     const res = await apiClient.get<ApiResponse<Category[]>>(`/api/category/list?categoryType=${categoryType}`);
-    return res.data?.data || [];
+    const list = res.data?.data || [];
+    const seen = new Set<string>();
+    return list.filter((cat) => {
+      const key = `${cat.categoryType}-${(cat.name || '').trim().toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   },
 
   async saveCategory(category: Partial<Category>): Promise<Category[]> {

@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'center',
-    marginVertical: 18,
+    marginVertical: 10,
     paddingHorizontal: 16,
   },
   currencyPrefix: {
@@ -136,16 +136,16 @@ const styles = StyleSheet.create({
   },
   keypadGrid: {
     width: '100%',
-    gap: 10,
+    gap: 8,
   },
   row: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     justifyContent: 'space-between',
   },
   keyButton: {
     flex: 1,
-    height: 56,
+    height: 46,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

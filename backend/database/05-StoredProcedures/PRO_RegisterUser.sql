@@ -56,21 +56,6 @@ BEGIN
         (@UserId, N'Bank Account', 2, 0.00, '#5B3FE0', 'bank', @UserId, @Now),
         (@UserId, N'Pocket Money', 5, 0.00, '#A99BFF', 'wallet', @UserId, @Now);
 
-    -- Seed Default Categories (Expense & Income)
-    INSERT INTO [dbo].[Category] ([UserId], [Name], [Icon], [ColorHex], [CategoryType], [IsSystemDefault], [UpdatedBy], [UpdatedOn])
-    VALUES
-        (@UserId, N'Food & Dining', 'utensils', '#FF7A7A', 1, 1, @UserId, @Now),
-        (@UserId, N'Shopping & Clothes', 'shopping-bag', '#A99BFF', 1, 1, @UserId, @Now),
-        (@UserId, N'Transport & Commute', 'car', '#4CD3A5', 1, 1, @UserId, @Now),
-        (@UserId, N'Entertainment & Fun', 'film', '#F4B740', 1, 1, @UserId, @Now),
-        (@UserId, N'Bills & Utilities', 'receipt', '#5B3FE0', 1, 1, @UserId, @Now),
-        (@UserId, N'Gadgets & Tech', 'smartphone', '#38BDF8', 1, 1, @UserId, @Now),
-        (@UserId, N'Health & Fitness', 'heart', '#EC4899', 1, 1, @UserId, @Now),
-        (@UserId, N'Salary', 'briefcase', '#4CD3A5', 2, 1, @UserId, @Now),
-        (@UserId, N'Pocket Money / Allowance', 'gift', '#A99BFF', 2, 1, @UserId, @Now),
-        (@UserId, N'Freelance / Side Gig', 'laptop', '#38BDF8', 2, 1, @UserId, @Now),
-        (@UserId, N'Investments & Dividends', 'trending-up', '#10B981', 2, 1, @UserId, @Now);
-
     -- Result Contract
     SELECT 1 AS [Status], 'AUTH_REGISTER_SUCCESS' AS [MessageCode];
 

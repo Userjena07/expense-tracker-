@@ -3,12 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   RefreshControl,
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, PieChart, Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../theme/useTheme';
