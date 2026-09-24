@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
-import Svg, { Path, G, Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, G, Circle } from 'react-native-svg';
 import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   BarChart3,
   PieChart as PieIcon,
+  Layers,
 } from 'lucide-react-native';
 import { useTheme } from '../../theme/useTheme';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -29,15 +30,18 @@ import { EmptyState } from '../../components/EmptyState';
 const { width } = Dimensions.get('window');
 
 const SLICE_COLORS = [
-  '#FF5A78', // Coral Red (Apparel/Primary)
-  '#FB923C', // Warm Orange (Food)
-  '#FBBF24', // Gold (Gift)
-  '#FACC15', // Yellow (Household)
-  '#4ADE80', // Green (Social Life)
-  '#38BDF8', // Cyan (Transport)
-  '#818CF8', // Indigo (Entertainment)
-  '#C084FC', // Purple (Education)
-  '#F472B6', // Pink (Health)
+  '#8B5CF6', // Purple / Accent
+  '#FF5A78', // Coral Red / Pink
+  '#FB923C', // Warm Orange
+  '#10B981', // Emerald Green
+  '#38BDF8', // Sky Blue
+  '#FBBF24', // Amber Gold
+  '#EC4899', // Fuchsia
+  '#6366F1', // Indigo
+  '#14B8A6', // Teal
+  '#F43F5E', // Rose
+  '#A855F7', // Violet
+  '#06B6D4', // Cyan
 ];
 
 export function getCategoryEmoji(categoryName: string, iconName?: string): string {
@@ -45,22 +49,23 @@ export function getCategoryEmoji(categoryName: string, iconName?: string): strin
   const icon = (iconName || '').toLowerCase().trim();
 
   if (name.includes('apparel') || name.includes('cloth') || name.includes('dress') || name.includes('shopping') || icon === 'shopping-bag') return '👘';
-  if (name.includes('food') || name.includes('dining') || name.includes('restaurant') || name.includes('lunch') || name.includes('dinner') || icon === 'utensils') return '🍜';
+  if (name.includes('food') || name.includes('dining') || name.includes('restaurant') || name.includes('lunch') || name.includes('dinner') || name.includes('grocery') || name.includes('groceries') || icon === 'utensils') return '🍜';
   if (name.includes('gift') || name.includes('allowance') || name.includes('pocket') || icon === 'gift') return '🎁';
   if (name.includes('house') || name.includes('home') || name.includes('furniture') || name.includes('rent')) return '🪑';
   if (name.includes('social') || name.includes('friend') || name.includes('party')) return '🧑‍🤝‍🧑';
-  if (name.includes('bill') || name.includes('utilit') || name.includes('electric') || name.includes('water') || icon === 'receipt') return '⚡';
-  if (name.includes('entertain') || name.includes('game') || name.includes('movie') || icon === 'gamepad' || icon === 'film') return '🎮';
-  if (name.includes('health') || name.includes('fit') || name.includes('gym') || name.includes('medical') || icon === 'heart') return '❤️';
-  if (name.includes('transport') || name.includes('car') || name.includes('commute') || name.includes('fuel') || icon === 'car') return '🚗';
+  if (name.includes('bill') || name.includes('utilit') || name.includes('electric') || name.includes('water') || name.includes('wifi') || name.includes('internet') || icon === 'receipt') return '⚡';
+  if (name.includes('entertain') || name.includes('game') || name.includes('movie') || name.includes('netflix') || icon === 'gamepad' || icon === 'film') return '🎮';
+  if (name.includes('health') || name.includes('fit') || name.includes('gym') || name.includes('medical') || name.includes('medicine') || icon === 'heart') return '❤️';
+  if (name.includes('transport') || name.includes('car') || name.includes('commute') || name.includes('fuel') || name.includes('petrol') || name.includes('taxi') || name.includes('uber') || icon === 'car') return '🚗';
   if (name.includes('gadget') || name.includes('tech') || name.includes('phone') || icon === 'smartphone') return '📱';
   if (name.includes('salary') || name.includes('paycheck') || name.includes('job') || icon === 'briefcase') return '💼';
-  if (name.includes('freelance') || name.includes('gig') || name.includes('laptop') || icon === 'laptop') return '💻';
-  if (name.includes('invest') || name.includes('dividend') || icon === 'trending-up') return '📈';
-  if (name.includes('education') || name.includes('book') || name.includes('course')) return '📚';
-  if (name.includes('beauty') || name.includes('salon')) return '💄';
-  if (name.includes('travel') || name.includes('flight') || name.includes('vacation')) return '✈️';
+  if (name.includes('freelance') || name.includes('gig') || name.includes('side') || icon === 'laptop') return '💻';
+  if (name.includes('invest') || name.includes('stock') || name.includes('crypto') || name.includes('dividend') || icon === 'trending-up') return '📈';
+  if (name.includes('education') || name.includes('book') || name.includes('school') || name.includes('course')) return '📚';
+  if (name.includes('beauty') || name.includes('salon') || name.includes('hair') || name.includes('spa')) return '💄';
+  if (name.includes('travel') || name.includes('flight') || name.includes('vacation') || name.includes('hotel')) return '✈️';
   if (name.includes('pet') || name.includes('dog') || name.includes('cat')) return '🐾';
+  if (name.includes('personal') || name.includes('self')) return '✨';
   return '🏷️';
 }
 
@@ -129,36 +134,65 @@ export default function InsightsScreen() {
     await Promise.all([refetchCat(), refetchDaily(), refetchSummary()]);
   };
 
+  // Safe Total Calculations
   const totalExpense = monthlySummary?.totalExpense ?? 0;
   const totalIncome = monthlySummary?.totalIncome ?? 0;
-  const totalActiveAmount = activeTab === 1 ? totalExpense : totalIncome;
+  
+  const totalCategoriesAmount = useMemo(() => {
+    return categoryBreakdown.reduce((sum, item) => sum + (Number(item.totalAmount) || 0), 0);
+  }, [categoryBreakdown]);
+
+  const activeTotal = totalCategoriesAmount > 0 
+    ? totalCategoriesAmount 
+    : (activeTab === 1 ? totalExpense : totalIncome);
 
   const maxDailyExpense = dailyBreakdown.reduce((max, d) => Math.max(max, d.expenseTotal), 0);
 
-  // Prepare Pie Chart Slices
-  const pieData = categoryBreakdown.map((item, index) => {
-    const color = item.categoryColorHex || SLICE_COLORS[index % SLICE_COLORS.length];
-    return {
-      ...item,
-      color,
-    };
-  });
+  // Prepare Pie / Donut Data with accurate percentages
+  const pieData = useMemo(() => {
+    return categoryBreakdown.map((item, index) => {
+      const catAmount = Number(item.totalAmount) || 0;
+      const computedPercent = totalCategoriesAmount > 0
+        ? (catAmount / totalCategoriesAmount) * 100
+        : (Number(item.percentage) || 0);
 
-  const chartSize = Math.min(width - 20, 340);
+      const color = item.categoryColorHex && item.categoryColorHex.startsWith('#')
+        ? item.categoryColorHex
+        : SLICE_COLORS[index % SLICE_COLORS.length];
+
+      return {
+        ...item,
+        totalAmount: catAmount,
+        percentage: computedPercent,
+        color,
+      };
+    });
+  }, [categoryBreakdown, totalCategoriesAmount]);
+
+  const selectedCategory = useMemo(() => {
+    if (!selectedCategoryName) return null;
+    return pieData.find((p) => p.categoryName === selectedCategoryName) || null;
+  }, [pieData, selectedCategoryName]);
+
+  // Chart Dimensions
+  const chartSize = Math.min(width - 32, 280);
   const center = chartSize / 2;
-  const radiusVal = Math.round(chartSize * 0.26);
+  const outerRadius = chartSize * 0.44;
+  const innerRadius = chartSize * 0.29;
+  const strokeWidth = outerRadius - innerRadius;
+  const ringRadius = (outerRadius + innerRadius) / 2;
 
-  // Build SVG Pie Paths
-  const renderPieSlices = () => {
-    if (pieData.length === 0 || totalActiveAmount === 0) {
+  // Build SVG Donut Ring Arcs
+  const renderDonutSlices = () => {
+    if (pieData.length === 0 || activeTotal === 0) {
       return (
         <Circle
           cx={center}
           cy={center}
-          r={radiusVal}
+          r={ringRadius}
           fill="none"
           stroke={colors.cardBorder}
-          strokeWidth={3}
+          strokeWidth={strokeWidth}
           strokeDasharray="6,6"
         />
       );
@@ -167,118 +201,65 @@ export default function InsightsScreen() {
     if (pieData.length === 1) {
       const slice = pieData[0];
       return (
-        <G>
-          <Circle
-            cx={center}
-            cy={center}
-            r={radiusVal}
-            fill={slice.color}
-            opacity={selectedCategoryName && selectedCategoryName !== slice.categoryName ? 0.4 : 1}
-          />
-          <SvgText
-            x={center}
-            y={center - 6}
-            fill="#FFFFFF"
-            fontSize="14"
-            fontWeight="700"
-            textAnchor="middle"
-          >
-            {slice.categoryName}
-          </SvgText>
-          <SvgText
-            x={center}
-            y={center + 14}
-            fill="#FFFFFF"
-            fontSize="12"
-            fontWeight="800"
-            textAnchor="middle"
-          >
-            100%
-          </SvgText>
-        </G>
+        <Circle
+          cx={center}
+          cy={center}
+          r={ringRadius}
+          fill="none"
+          stroke={slice.color}
+          strokeWidth={strokeWidth}
+          opacity={selectedCategoryName && selectedCategoryName !== slice.categoryName ? 0.35 : 1}
+        />
       );
     }
 
-    let startAngle = -Math.PI / 2;
-    return pieData.map((slice, idx) => {
-      const angle = (slice.percentage / 100) * 2 * Math.PI;
-      const endAngle = startAngle + angle;
-      const midAngle = startAngle + angle / 2;
+    let currentAngle = -Math.PI / 2;
+    const circumference = 2 * Math.PI * ringRadius;
 
-      const x1 = center + radiusVal * Math.cos(startAngle);
-      const y1 = center + radiusVal * Math.sin(startAngle);
-      const x2 = center + radiusVal * Math.cos(endAngle);
-      const y2 = center + radiusVal * Math.sin(endAngle);
+    return pieData.map((slice, idx) => {
+      const fraction = Math.max(0, Math.min(1, slice.percentage / 100));
+      if (fraction <= 0) return null;
+
+      const angle = fraction * 2 * Math.PI;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + angle;
+      currentAngle = endAngle;
+
+      // Donut slice path with inner and outer radii
+      const x1Outer = center + outerRadius * Math.cos(startAngle);
+      const y1Outer = center + outerRadius * Math.sin(startAngle);
+      const x2Outer = center + outerRadius * Math.cos(endAngle);
+      const y2Outer = center + outerRadius * Math.sin(endAngle);
+
+      const x1Inner = center + innerRadius * Math.cos(endAngle);
+      const y1Inner = center + innerRadius * Math.sin(endAngle);
+      const x2Inner = center + innerRadius * Math.cos(startAngle);
+      const y2Inner = center + innerRadius * Math.sin(startAngle);
 
       const largeArc = angle > Math.PI ? 1 : 0;
-      const pathData = `M ${center} ${center} L ${x1} ${y1} A ${radiusVal} ${radiusVal} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-
-      // Callout Line & Label calculation
-      const shouldDrawCallout = slice.percentage >= 1.5 && idx < 6;
-
-      const innerLineX = center + (radiusVal - 2) * Math.cos(midAngle);
-      const innerLineY = center + (radiusVal - 2) * Math.sin(midAngle);
-
-      const isRight = Math.cos(midAngle) >= 0;
-      const elbowDist = radiusVal + 28 + (idx % 2 === 1 ? 16 : 0);
-      const elbowX = center + elbowDist * Math.cos(midAngle);
-      const elbowY = center + elbowDist * Math.sin(midAngle);
-      const tipX = isRight ? elbowX + 22 : elbowX - 22;
-      const tipY = elbowY;
-
-      const textAnchor = isRight ? 'start' : 'end';
-      const textX = isRight ? tipX + 5 : tipX - 5;
-      const catName = slice.categoryName || 'General';
-      const displayName = catName.length > 15 ? `${catName.slice(0, 14)}…` : catName;
-
       const isSelected = selectedCategoryName === slice.categoryName;
       const isDimmed = selectedCategoryName !== null && !isSelected;
 
-      startAngle = endAngle;
+      const pathData = [
+        `M ${x1Outer} ${y1Outer}`,
+        `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x2Outer} ${y2Outer}`,
+        `L ${x1Inner} ${y1Inner}`,
+        `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x2Inner} ${y2Inner}`,
+        'Z',
+      ].join(' ');
 
       return (
-        <G key={slice.categoryId || idx}>
-          <Path
-            d={pathData}
-            fill={slice.color}
-            opacity={isDimmed ? 0.35 : 1}
-            stroke={colors.bg}
-            strokeWidth={1.5}
-            onPress={() => {
-              setSelectedCategoryName(isSelected ? null : slice.categoryName);
-            }}
-          />
-          {shouldDrawCallout && (
-            <G opacity={isDimmed ? 0.3 : 1}>
-              <Polyline
-                points={`${innerLineX},${innerLineY} ${elbowX},${elbowY} ${tipX},${tipY}`}
-                fill="none"
-                stroke={slice.color}
-                strokeWidth={1.4}
-              />
-              <SvgText
-                x={textX}
-                y={tipY - 3}
-                fill={colors.text}
-                fontSize="11"
-                fontWeight="700"
-                textAnchor={textAnchor}
-              >
-                {displayName}
-              </SvgText>
-              <SvgText
-                x={textX}
-                y={tipY + 11}
-                fill={colors.textSecondary}
-                fontSize="10"
-                fontWeight="600"
-                textAnchor={textAnchor}
-              >
-                {slice.percentage.toFixed(1)} %
-              </SvgText>
-            </G>
-          )}
-        </G>
+        <Path
+          key={slice.categoryId ? `slice-${slice.categoryId}` : `slice-${idx}`}
+          d={pathData}
+          fill={slice.color}
+          opacity={isDimmed ? 0.25 : 1}
+          stroke={colors.bg}
+          strokeWidth={2}
+          onPress={() => {
+            setSelectedCategoryName(isSelected ? null : slice.categoryName);
+          }}
+        />
       );
     });
   };
@@ -376,7 +357,7 @@ export default function InsightsScreen() {
                 },
               ]}
             >
-              Expenses {formatCurrency(totalExpense, 'INR', currencySymbol)}
+              Expenses {formatCurrency(totalExpense > 0 ? totalExpense : activeTotal, 'INR', currencySymbol)}
             </Text>
             {activeTab === 1 && (
               <View style={[styles.activeUnderline, { backgroundColor: colors.expense }]} />
@@ -384,15 +365,70 @@ export default function InsightsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Center Pie Chart Area */}
+        {/* Center Donut Chart Area with Interactive Center Details */}
         <View style={styles.chartContainer}>
           <Svg width={chartSize} height={chartSize}>
-            {renderPieSlices()}
+            <G>{renderDonutSlices()}</G>
           </Svg>
+
+          {/* Center Cutout Info Overlay */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setSelectedCategoryName(null)}
+            style={[
+              styles.centerInfoContainer,
+              {
+                width: innerRadius * 2 - 8,
+                height: innerRadius * 2 - 8,
+                borderRadius: innerRadius,
+                backgroundColor: colors.card,
+              },
+            ]}
+          >
+            {selectedCategory ? (
+              <View style={styles.centerTextWrapper}>
+                <Text style={styles.centerEmoji}>
+                  {getCategoryEmoji(selectedCategory.categoryName, selectedCategory.categoryIcon)}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.centerCategoryName, { color: colors.text, fontSize: typography.sm }]}
+                >
+                  {selectedCategory.categoryName}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.centerAmount, { color: selectedCategory.color, fontSize: typography.base }]}
+                >
+                  {formatCurrency(selectedCategory.totalAmount, 'INR', currencySymbol)}
+                </Text>
+                <View style={[styles.centerPill, { backgroundColor: `${selectedCategory.color}20` }]}>
+                  <Text style={[styles.centerPillText, { color: selectedCategory.color }]}>
+                    {selectedCategory.percentage < 1 ? '<1%' : `${selectedCategory.percentage.toFixed(1)}%`}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.centerTextWrapper}>
+                <Text style={[styles.centerSubLabel, { color: colors.textSecondary, fontSize: typography.xs }]}>
+                  {activeTab === 1 ? 'Total Expense' : 'Total Income'}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.centerGrandTotal, { color: colors.text, fontSize: typography.md }]}
+                >
+                  {formatCurrency(activeTotal, 'INR', currencySymbol)}
+                </Text>
+                <Text style={[styles.centerCatCount, { color: colors.textMuted, fontSize: 11 }]}>
+                  {pieData.length} {pieData.length === 1 ? 'Category' : 'Categories'}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
           {pieData.length === 0 && (
             <View style={styles.emptyPieOverlay}>
-              <PieIcon size={32} color={colors.textMuted} />
+              <PieIcon size={30} color={colors.textMuted} />
               <Text style={[styles.emptyPieText, { color: colors.textMuted, fontSize: typography.xs }]}>
                 No {activeTab === 1 ? 'expenses' : 'income'} recorded
               </Text>
@@ -400,13 +436,16 @@ export default function InsightsScreen() {
           )}
         </View>
 
-        {/* Selected Category Highlight Banner */}
+        {/* Selected Category Filter Banner */}
         {selectedCategoryName && (
           <View style={[styles.selectedBanner, { backgroundColor: colors.card, borderColor: colors.accent }]}>
-            <Text style={[styles.selectedBannerText, { color: colors.text, fontSize: typography.sm }]}>
-              Filtered: <Text style={{ fontWeight: '800', color: colors.accent }}>{selectedCategoryName}</Text>
-            </Text>
-            <TouchableOpacity onPress={() => setSelectedCategoryName(null)}>
+            <View style={styles.bannerLeft}>
+              <Layers size={16} color={colors.accent} />
+              <Text style={[styles.selectedBannerText, { color: colors.text, fontSize: typography.sm }]}>
+                Filtered: <Text style={{ fontWeight: '800', color: colors.accent }}>{selectedCategoryName}</Text>
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setSelectedCategoryName(null)} style={styles.clearFilterBtn}>
               <Text style={[styles.clearFilterText, { color: colors.accent, fontSize: typography.xs }]}>
                 Show All
               </Text>
@@ -414,7 +453,7 @@ export default function InsightsScreen() {
           </View>
         )}
 
-        {/* Category Breakdown List (Exact match with screenshot) */}
+        {/* Category Breakdown List */}
         <View style={styles.categoriesListContainer}>
           {pieData.length === 0 ? (
             <Card style={styles.emptyCard}>
@@ -424,41 +463,64 @@ export default function InsightsScreen() {
               />
             </Card>
           ) : (
-            pieData.map((cat) => {
+            pieData.map((cat, idx) => {
               const isSelected = selectedCategoryName === cat.categoryName;
               const emoji = getCategoryEmoji(cat.categoryName, cat.categoryIcon);
+              const percentDisplay = cat.percentage < 1 ? '<1%' : `${cat.percentage.toFixed(1)}%`;
+
               return (
                 <TouchableOpacity
-                  key={cat.categoryId}
+                  key={cat.categoryId ? `cat-row-${cat.categoryId}` : `cat-row-${cat.categoryName}-${idx}`}
                   activeOpacity={0.7}
                   onPress={() => setSelectedCategoryName(isSelected ? null : cat.categoryName)}
                   style={[
-                    styles.categoryRowItem,
+                    styles.categoryCardItem,
                     {
-                      backgroundColor: isSelected ? `${cat.color}20` : colors.card,
+                      backgroundColor: isSelected ? `${cat.color}15` : colors.card,
                       borderColor: isSelected ? cat.color : colors.cardBorder,
                     },
                   ]}
                 >
-                  {/* Left: Solid Colored Percentage Badge */}
-                  <View style={[styles.percentBadge, { backgroundColor: cat.color, borderRadius: radius.sm }]}>
-                    <Text style={styles.percentBadgeText}>
-                      {cat.percentage < 1 ? '<1%' : `${Math.round(cat.percentage)}%`}
+                  <View style={styles.categoryCardTop}>
+                    {/* Left: Percentage Badge */}
+                    <View style={[styles.percentBadge, { backgroundColor: cat.color, borderRadius: radius.sm }]}>
+                      <Text style={styles.percentBadgeText}>{percentDisplay}</Text>
+                    </View>
+
+                    {/* Center: Emoji + Name + Txn Count */}
+                    <View style={styles.categoryInfoCenter}>
+                      <Text style={styles.categoryEmoji}>{emoji}</Text>
+                      <View style={styles.categoryNameColumn}>
+                        <Text
+                          numberOfLines={1}
+                          style={[styles.categoryNameText, { color: colors.text, fontSize: typography.base }]}
+                        >
+                          {cat.categoryName || 'General'}
+                        </Text>
+                        <Text style={[styles.categorySubCount, { color: colors.textMuted, fontSize: typography.xs }]}>
+                          {cat.transactionCount} {cat.transactionCount === 1 ? 'transaction' : 'transactions'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Right: Total Amount */}
+                    <Text style={[styles.categoryAmountText, { color: colors.text, fontSize: typography.base }]}>
+                      {formatCurrency(cat.totalAmount, 'INR', currencySymbol)}
                     </Text>
                   </View>
 
-                  {/* Center: Category Emoji + Name */}
-                  <View style={styles.categoryInfoCenter}>
-                    <Text style={styles.categoryEmoji}>{emoji}</Text>
-                    <Text style={[styles.categoryNameText, { color: colors.text, fontSize: typography.base }]}>
-                      {cat.categoryName}
-                    </Text>
+                  {/* Horizontal Progress Fill Bar */}
+                  <View style={[styles.progressBarTrack, { backgroundColor: colors.bgSecondary }]}>
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        {
+                          backgroundColor: cat.color,
+                          width: `${Math.min(100, Math.max(2, cat.percentage))}%`,
+                        },
+                      ]}
+                    />
                   </View>
-
-                  {/* Right: Formatted Total Amount */}
-                  <Text style={[styles.categoryAmountText, { color: colors.text, fontSize: typography.base }]}>
-                    {formatCurrency(cat.totalAmount, 'INR', currencySymbol)}
-                  </Text>
                 </TouchableOpacity>
               );
             })
@@ -593,8 +655,59 @@ const styles = StyleSheet.create({
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 12,
+    marginVertical: 14,
     position: 'relative',
+  },
+  centerInfoContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  centerTextWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  centerEmoji: {
+    fontSize: 22,
+    marginBottom: 2,
+  },
+  centerCategoryName: {
+    fontWeight: '700',
+    maxWidth: 120,
+    textAlign: 'center',
+  },
+  centerAmount: {
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  centerPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginTop: 2,
+  },
+  centerPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  centerSubLabel: {
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  centerGrandTotal: {
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  centerCatCount: {
+    fontWeight: '600',
   },
   emptyPieOverlay: {
     position: 'absolute',
@@ -613,9 +726,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 14,
+  },
+  bannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   selectedBannerText: {},
+  clearFilterBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
   clearFilterText: {
     fontWeight: '700',
   },
@@ -623,28 +745,30 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 20,
   },
-  categoryRowItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  categoryCardItem: {
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 14,
     borderWidth: 1,
+    gap: 8,
+  },
+  categoryCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   percentBadge: {
     paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    minWidth: 50,
+    paddingHorizontal: 9,
+    minWidth: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   percentBadgeText: {
     color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: 13,
+    fontSize: 12,
   },
   categoryInfoCenter: {
     flexDirection: 'row',
@@ -654,13 +778,31 @@ const styles = StyleSheet.create({
   },
   categoryEmoji: {
     fontSize: 20,
-    marginRight: 4,
+    marginRight: 2,
+  },
+  categoryNameColumn: {
+    flex: 1,
+    justifyContent: 'center',
   },
   categoryNameText: {
     fontWeight: '700',
   },
+  categorySubCount: {
+    marginTop: 1,
+    fontWeight: '500',
+  },
   categoryAmountText: {
     fontWeight: '800',
+  },
+  progressBarTrack: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 2,
   },
   emptyCard: {
     marginBottom: 20,

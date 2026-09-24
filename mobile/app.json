@@ -8,7 +8,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#FFEBB8",
+      "backgroundColor": "#F8FAFC",
       "resizeMode": "contain"
     },
     "ios": {
@@ -18,7 +18,7 @@
       "package": "com.expensetracker.app",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "backgroundColor": "#FFEBB8",
+        "backgroundColor": "#F8FAFC",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false

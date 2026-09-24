@@ -56,13 +56,13 @@ export const darkTheme = {
 
 export const lightTheme = {
   name: 'light' as const,
-  bg: '#FFEBB8',
-  bgSecondary: '#F7E2A8',
+  bg: '#F8FAFC',
+  bgSecondary: '#F1F5F9',
   card: '#FFFFFF',
-  cardBorder: '#F2D792',
-  text: '#1C1917',
-  textSecondary: '#57534E',
-  textMuted: '#8C857B',
+  cardBorder: '#E2E8F0',
+  text: '#0F172A',
+  textSecondary: '#64748B',
+  textMuted: '#94A3B8',
   accent: '#8B5CF6',
   accentGradient: ['#8B5CF6', '#6366F1'],
   accentLight: '#8B5CF618',
@@ -76,9 +76,9 @@ export const lightTheme = {
   warningBg: '#F59E0B18',
   gold: '#D97706',
   danger: '#EF4444',
-  border: '#F2D792',
-  inputBg: '#FFF6E0',
-  tabBarBg: '#FFEBB8',
+  border: '#E2E8F0',
+  inputBg: '#F8FAFC',
+  tabBarBg: '#FFFFFFF0',
 };
 
 export type Theme = typeof darkTheme;
