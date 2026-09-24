@@ -8,6 +8,7 @@ import {
   Switch,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -26,12 +27,14 @@ import {
   Check,
   Eye,
   EyeOff,
+  RefreshCw,
 } from 'lucide-react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import * as Updates from 'expo-updates';
 import { useTheme } from '../../theme/useTheme';
 import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -130,6 +133,37 @@ export default function SettingsScreen() {
         },
       },
     ]);
+  };
+
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+
+  const handleCheckForUpdates = async () => {
+    if (__DEV__) {
+      Alert.alert('Development Mode', 'Over-the-air updates are only checked in preview/production builds.');
+      return;
+    }
+    try {
+      setCheckingUpdate(true);
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        Alert.alert('Update Found', 'Downloading the latest updates...', [], { cancelable: false });
+        await Updates.fetchUpdateAsync();
+        Alert.alert(
+          'Update Ready',
+          'The update has been downloaded. Would you like to restart the app now?',
+          [
+            { text: 'Restart Now', onPress: async () => await Updates.reloadAsync() },
+            { text: 'Later', style: 'cancel' },
+          ]
+        );
+      } else {
+        Alert.alert('App Up to Date', 'You are currently running the latest available update.');
+      }
+    } catch (err: any) {
+      Alert.alert('Update Check Failed', err.message || 'Could not connect to update servers. Check your internet connection.');
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   const currencies = ['INR', 'USD', 'EUR', 'GBP', 'CAD', 'AUD'];
@@ -378,6 +412,35 @@ export default function SettingsScreen() {
               <Text style={[styles.settingLabel, { color: colors.text, fontSize: typography.base }]}>
                 Export All Transactions (CSV)
               </Text>
+            </View>
+            <ChevronRight size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: colors.cardBorder }]} />
+
+          {/* Check for Updates */}
+          <TouchableOpacity
+            style={styles.navRow}
+            onPress={handleCheckForUpdates}
+            activeOpacity={0.7}
+            disabled={checkingUpdate}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconWrapper, { backgroundColor: `${colors.accent}20` }]}>
+                {checkingUpdate ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : (
+                  <RefreshCw size={18} color={colors.accent} />
+                )}
+              </View>
+              <View>
+                <Text style={[styles.settingLabel, { color: colors.text, fontSize: typography.base }]}>
+                  Check for Updates (OTA)
+                </Text>
+                <Text style={[styles.keyHintText, { color: colors.textSecondary, fontSize: typography.xs }]}>
+                  {checkingUpdate ? 'Connecting to update server...' : 'Tap to fetch latest updates directly'}
+                </Text>
+              </View>
             </View>
             <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
