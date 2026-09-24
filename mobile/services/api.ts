@@ -4,27 +4,32 @@ import { Platform } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 import { ApiResponse, AuthResponse } from '../types/api';
 
+const RENDER_PROD_API_URL = 'https://expense-tracker-api-4xxr.onrender.com';
+
 const getBaseUrl = (): string => {
-  if (process.env.EXPO_PUBLIC_API_URL) {
+  if (process.env.EXPO_PUBLIC_API_URL && process.env.EXPO_PUBLIC_API_URL.startsWith('http')) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
 
-  if (Platform.OS === 'web') {
-    return 'http://localhost:5050';
+  // Only use localhost in local dev server mode
+  if (__DEV__) {
+    const hostUri = Constants.expoConfig?.hostUri;
+    if (hostUri) {
+      const ip = hostUri.split(':')[0];
+      return `http://${ip}:5050`;
+    }
+
+    if (Platform.OS === 'web') {
+      return 'http://localhost:5050';
+    }
+
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:5050';
+    }
   }
 
-  // Auto-detect host IP when running on physical device via Expo Go or simulator
-  const hostUri = Constants.expoConfig?.hostUri;
-  if (hostUri) {
-    const ip = hostUri.split(':')[0];
-    return `http://${ip}:5050`;
-  }
-
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:5050';
-  }
-
-  return 'http://localhost:5050';
+  // Default to live Render backend for all mobile standalone/preview/production builds
+  return RENDER_PROD_API_URL;
 };
 
 const API_BASE_URL = getBaseUrl();
