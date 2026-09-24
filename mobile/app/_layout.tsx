@@ -34,8 +34,9 @@ function RootNavigation() {
         appState.current.match(/inactive|background/) &&
         nextAppState === 'active'
       ) {
-        if (user?.isBiometricOn) {
-          setLocked(true);
+        const auth = useAuthStore.getState();
+        if (auth.isAuthenticated && auth.user?.isBiometricOn) {
+          auth.setLocked(true);
         }
       }
       appState.current = nextAppState;
@@ -44,7 +45,7 @@ function RootNavigation() {
     return () => {
       subscription.remove();
     };
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;

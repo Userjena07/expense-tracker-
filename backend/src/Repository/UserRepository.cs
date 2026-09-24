@@ -256,10 +256,10 @@ public class UserRepository : BaseRepository, IUserRepository
         var parameters = new DynamicParameters();
         parameters.Add("@RequestedBy", user.RequestedBy);
         parameters.Add("@SessionToken", user.SessionToken);
-        parameters.Add("@FullName", user.FullName);
-        parameters.Add("@CurrencyCode", user.CurrencyCode);
-        parameters.Add("@MonthStartDay", user.MonthStartDay);
-        parameters.Add("@Theme", user.Theme);
+        parameters.Add("@FullName", string.IsNullOrWhiteSpace(user.FullName) ? null : user.FullName);
+        parameters.Add("@CurrencyCode", string.IsNullOrWhiteSpace(user.CurrencyCode) ? null : user.CurrencyCode);
+        parameters.Add("@MonthStartDay", user.MonthStartDay == 0 ? null : (byte?)user.MonthStartDay);
+        parameters.Add("@Theme", string.IsNullOrWhiteSpace(user.Theme) ? null : user.Theme);
         parameters.Add("@IsBiometricOn", user.IsBiometricOn);
 
         try

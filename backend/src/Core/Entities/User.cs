@@ -71,9 +71,13 @@ public class User : CommonInfo
                 break;
 
             case ValidationContext.UpdateProfile:
-                if (string.IsNullOrWhiteSpace(FullName))
+                if (FullName != null && string.IsNullOrWhiteSpace(FullName))
                 {
                     return AppConstants.MessageCodes.User.FullNameRequired;
+                }
+                if (!string.IsNullOrWhiteSpace(FullName) && FullName.Length > 100)
+                {
+                    return AppConstants.MessageCodes.General.ValidationError;
                 }
                 break;
         }

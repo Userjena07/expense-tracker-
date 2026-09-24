@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -53,6 +53,12 @@ export default function SettingsScreen() {
   const [showSecretKey, setShowSecretKey] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
 
+  useEffect(() => {
+    if (user?.isBiometricOn !== undefined) {
+      setBiometricEnabled(user.isBiometricOn);
+    }
+  }, [user?.isBiometricOn]);
+
   const handleCopySecretKey = async () => {
     if (!secretKey) return;
     await Clipboard.setStringAsync(secretKey);
@@ -75,6 +81,8 @@ export default function SettingsScreen() {
 
       const authRes = await LocalAuthentication.authenticateAsync({
         promptMessage: 'Authenticate to enable biometric lock',
+        fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: false,
       });
 
       if (!authRes.success) {
@@ -84,16 +92,18 @@ export default function SettingsScreen() {
 
     setBiometricEnabled(value);
     if (user) {
-      updateUser({ ...user, isBiometricOn: value });
-      authService.updateProfile({ isBiometricOn: value }).catch(console.error);
+      const updatedUser = { ...user, isBiometricOn: value };
+      updateUser(updatedUser);
+      authService.updateProfile(updatedUser).catch(console.error);
     }
   };
 
   const handleCurrencyChange = (curr: string) => {
     setCurrency(curr);
     if (user) {
-      updateUser({ ...user, currencyCode: curr });
-      authService.updateProfile({ currencyCode: curr }).catch(console.error);
+      const updatedUser = { ...user, currencyCode: curr };
+      updateUser(updatedUser);
+      authService.updateProfile(updatedUser).catch(console.error);
     }
   };
 

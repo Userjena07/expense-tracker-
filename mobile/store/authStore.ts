@@ -23,6 +23,7 @@ const ACCESS_TOKEN_KEY = 'ET_ACCESS_TOKEN';
 const REFRESH_TOKEN_KEY = 'ET_REFRESH_TOKEN';
 const USER_KEY = 'ET_USER_PROFILE';
 const SECRET_KEY = 'ET_SECRET_KEY';
+const BIOMETRIC_KEY = 'ET_BIOMETRIC_ENABLED';
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -38,6 +39,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await storage.setItem(ACCESS_TOKEN_KEY, accessToken);
       await storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
       await storage.setItem(USER_KEY, JSON.stringify(user));
+      if (user.isBiometricOn) {
+        await storage.setItem(BIOMETRIC_KEY, 'true');
+      }
       if (secretKey) {
         await storage.setItem(SECRET_KEY, secretKey);
       }
@@ -67,6 +71,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   updateUser: (user: User) => {
     storage.setItem(USER_KEY, JSON.stringify(user)).catch(console.error);
+    storage.setItem(BIOMETRIC_KEY, user.isBiometricOn ? 'true' : 'false').catch(console.error);
     set({ user });
   },
 
@@ -91,6 +96,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await storage.deleteItem(REFRESH_TOKEN_KEY);
       await storage.deleteItem(USER_KEY);
       await storage.deleteItem(SECRET_KEY);
+      await storage.deleteItem(BIOMETRIC_KEY);
     } catch (e) {
       console.error('Failed to clear secure store', e);
     }
@@ -108,23 +114,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   loadStoredAuth: async () => {
     try {
-      const [accessToken, refreshToken, userJson, storedSecretKey] = await Promise.all([
+      const [accessToken, refreshToken, userJson, storedSecretKey, storedBio] = await Promise.all([
         storage.getItem(ACCESS_TOKEN_KEY),
         storage.getItem(REFRESH_TOKEN_KEY),
         storage.getItem(USER_KEY),
         storage.getItem(SECRET_KEY),
+        storage.getItem(BIOMETRIC_KEY),
       ]);
 
       if (accessToken && userJson) {
         const user = JSON.parse(userJson) as User;
+        const isBioActive = storedBio !== null ? storedBio === 'true' : !!user.isBiometricOn;
+        const resolvedUser = { ...user, isBiometricOn: isBioActive };
         set({
-          user,
+          user: resolvedUser,
           accessToken,
           refreshToken,
           secretKey: storedSecretKey,
           isAuthenticated: true,
           isLoading: false,
-          isLocked: user.isBiometricOn,
+          isLocked: isBioActive,
         });
         return;
       }

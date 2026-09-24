@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
-import Svg, { Path, G, Circle } from 'react-native-svg';
+import Svg, { Path, G, Circle, Text as SvgText, Rect } from 'react-native-svg';
 import {
   ChevronLeft,
   ChevronRight,
@@ -30,18 +30,18 @@ import { EmptyState } from '../../components/EmptyState';
 const { width } = Dimensions.get('window');
 
 const SLICE_COLORS = [
-  '#8B5CF6', // Purple / Accent
-  '#FF5A78', // Coral Red / Pink
-  '#FB923C', // Warm Orange
+  '#FF6363', // Coral Red (Apparel / Primary)
+  '#F97316', // Vibrant Orange (Food)
+  '#FBBF24', // Amber Yellow (Gift)
+  '#FACC15', // Bright Yellow (Household)
+  '#84CC16', // Lime Green (Social Life)
   '#10B981', // Emerald Green
-  '#38BDF8', // Sky Blue
-  '#FBBF24', // Amber Gold
-  '#EC4899', // Fuchsia
-  '#6366F1', // Indigo
-  '#14B8A6', // Teal
-  '#F43F5E', // Rose
-  '#A855F7', // Violet
   '#06B6D4', // Cyan
+  '#38BDF8', // Sky Blue
+  '#818CF8', // Indigo
+  '#A855F7', // Purple
+  '#EC4899', // Pink
+  '#F43F5E', // Rose
 ];
 
 export function getCategoryEmoji(categoryName: string, iconName?: string): string {
@@ -69,8 +69,45 @@ export function getCategoryEmoji(categoryName: string, iconName?: string): strin
   return '🏷️';
 }
 
+/**
+ * Splits text into lines naturally by words for clean SVG multi-line rendering
+ */
+export function wrapCategoryText(text: string, isSelected: boolean = false, maxCharsPerLine: number = 14): string[] {
+  if (!text) return [];
+  const clean = text.trim();
+  const words = clean.split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = '';
+
+  for (const word of words) {
+    if (!currentLine) {
+      currentLine = word;
+    } else if ((currentLine + ' ' + word).length <= maxCharsPerLine) {
+      currentLine += ' ' + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  // If selected, allow full text without clipping
+  if (isSelected) {
+    return lines;
+  }
+
+  // If unselected, limit to max 2 lines
+  if (lines.length > 2) {
+    return [lines[0], lines[1] + '…'];
+  }
+
+  return lines;
+}
+
 export default function InsightsScreen() {
-  const { colors, typography, radius } = useTheme();
+  const { colors, typography, radius, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const currencySymbol = useSettingsStore((s) => s.currencySymbol);
 
@@ -137,18 +174,18 @@ export default function InsightsScreen() {
   // Safe Total Calculations
   const totalExpense = monthlySummary?.totalExpense ?? 0;
   const totalIncome = monthlySummary?.totalIncome ?? 0;
-  
+
   const totalCategoriesAmount = useMemo(() => {
     return categoryBreakdown.reduce((sum, item) => sum + (Number(item.totalAmount) || 0), 0);
   }, [categoryBreakdown]);
 
-  const activeTotal = totalCategoriesAmount > 0 
-    ? totalCategoriesAmount 
+  const activeTotal = totalCategoriesAmount > 0
+    ? totalCategoriesAmount
     : (activeTab === 1 ? totalExpense : totalIncome);
 
   const maxDailyExpense = dailyBreakdown.reduce((max, d) => Math.max(max, d.expenseTotal), 0);
 
-  // Prepare Pie / Donut Data with accurate percentages
+  // Prepare Pie Data with accurate percentages and colors
   const pieData = useMemo(() => {
     return categoryBreakdown.map((item, index) => {
       const catAmount = Number(item.totalAmount) || 0;
@@ -169,100 +206,115 @@ export default function InsightsScreen() {
     });
   }, [categoryBreakdown, totalCategoriesAmount]);
 
-  const selectedCategory = useMemo(() => {
-    if (!selectedCategoryName) return null;
-    return pieData.find((p) => p.categoryName === selectedCategoryName) || null;
-  }, [pieData, selectedCategoryName]);
+  // Chart Geometry & Dynamic Multi-line Leader Line Layout Calculations
+  const chartWidth = Math.min(width - 24, 420);
+  const chartHeight = 310;
+  const cx = chartWidth / 2;
+  const cy = chartHeight / 2;
+  const pieRadius = 66;
 
-  // Chart Dimensions
-  const chartSize = Math.min(width - 32, 280);
-  const center = chartSize / 2;
-  const outerRadius = chartSize * 0.44;
-  const innerRadius = chartSize * 0.29;
-  const strokeWidth = outerRadius - innerRadius;
-  const ringRadius = (outerRadius + innerRadius) / 2;
+  const slicesWithLayout = useMemo(() => {
+    if (pieData.length === 0 || activeTotal === 0) return [];
 
-  // Build SVG Donut Ring Arcs
-  const renderDonutSlices = () => {
-    if (pieData.length === 0 || activeTotal === 0) {
-      return (
-        <Circle
-          cx={center}
-          cy={center}
-          r={ringRadius}
-          fill="none"
-          stroke={colors.cardBorder}
-          strokeWidth={strokeWidth}
-          strokeDasharray="6,6"
-        />
-      );
-    }
+    let currentAngle = -Math.PI / 2; // start from top (12 o'clock)
 
-    if (pieData.length === 1) {
-      const slice = pieData[0];
-      return (
-        <Circle
-          cx={center}
-          cy={center}
-          r={ringRadius}
-          fill="none"
-          stroke={slice.color}
-          strokeWidth={strokeWidth}
-          opacity={selectedCategoryName && selectedCategoryName !== slice.categoryName ? 0.35 : 1}
-        />
-      );
-    }
-
-    let currentAngle = -Math.PI / 2;
-    const circumference = 2 * Math.PI * ringRadius;
-
-    return pieData.map((slice, idx) => {
+    const items = pieData.map((slice, index) => {
       const fraction = Math.max(0, Math.min(1, slice.percentage / 100));
-      if (fraction <= 0) return null;
-
       const angle = fraction * 2 * Math.PI;
       const startAngle = currentAngle;
       const endAngle = currentAngle + angle;
+      const midAngle = startAngle + angle / 2;
       currentAngle = endAngle;
 
-      // Donut slice path with inner and outer radii
-      const x1Outer = center + outerRadius * Math.cos(startAngle);
-      const y1Outer = center + outerRadius * Math.sin(startAngle);
-      const x2Outer = center + outerRadius * Math.cos(endAngle);
-      const y2Outer = center + outerRadius * Math.sin(endAngle);
-
-      const x1Inner = center + innerRadius * Math.cos(endAngle);
-      const y1Inner = center + innerRadius * Math.sin(endAngle);
-      const x2Inner = center + innerRadius * Math.cos(startAngle);
-      const y2Inner = center + innerRadius * Math.sin(startAngle);
-
-      const largeArc = angle > Math.PI ? 1 : 0;
       const isSelected = selectedCategoryName === slice.categoryName;
       const isDimmed = selectedCategoryName !== null && !isSelected;
 
-      const pathData = [
-        `M ${x1Outer} ${y1Outer}`,
-        `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x2Outer} ${y2Outer}`,
-        `L ${x1Inner} ${y1Inner}`,
-        `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x2Inner} ${y2Inner}`,
-        'Z',
-      ].join(' ');
+      // Outer edge of the slice
+      const edgeX = cx + pieRadius * Math.cos(midAngle);
+      const edgeY = cy + pieRadius * Math.sin(midAngle);
 
-      return (
-        <Path
-          key={slice.categoryId ? `slice-${slice.categoryId}` : `slice-${idx}`}
-          d={pathData}
-          fill={slice.color}
-          opacity={isDimmed ? 0.25 : 1}
-          stroke={colors.bg}
-          strokeWidth={2}
-          onPress={() => {
-            setSelectedCategoryName(isSelected ? null : slice.categoryName);
-          }}
-        />
-      );
+      // Radial projection for callout bend
+      const outRadius = pieRadius + 18;
+      const outX = cx + outRadius * Math.cos(midAngle);
+      const outY = cy + outRadius * Math.sin(midAngle);
+
+      const isRight = Math.cos(midAngle) >= 0;
+
+      // Calculate wrapped lines for this category
+      const nameLines = wrapCategoryText(slice.categoryName, isSelected, isRight ? 14 : 14);
+
+      return {
+        ...slice,
+        index,
+        fraction,
+        angle,
+        startAngle,
+        endAngle,
+        midAngle,
+        edgeX,
+        edgeY,
+        outX,
+        outY,
+        isRight,
+        isSelected,
+        isDimmed,
+        nameLines,
+        targetY: outY,
+      };
     });
-  };
+
+    // Slices to show callout leader lines for (all valid categories with >= 0.5%)
+    const rightItems = items.filter((it) => it.isRight && it.percentage >= 0.5);
+    const leftItems = items.filter((it) => !it.isRight && it.percentage >= 0.5);
+
+    // Sort by Y position (top to bottom)
+    rightItems.sort((a, b) => a.outY - b.outY);
+    leftItems.sort((a, b) => a.outY - b.outY);
+
+    const minY = 26;
+    const maxY = chartHeight - 26;
+
+    const adjustVerticalSpacing = (list: typeof items) => {
+      if (list.length === 0) return;
+
+      const targets = list.map((it) => it.outY);
+
+      // Downward pass with dynamic gap based on line count
+      for (let i = 1; i < targets.length; i++) {
+        const prevItem = list[i - 1];
+        const dynamicGap = Math.max(32, (prevItem.nameLines.length + 1) * 14 + 10);
+        if (targets[i] < targets[i - 1] + dynamicGap) {
+          targets[i] = targets[i - 1] + dynamicGap;
+        }
+      }
+
+      // Upward pass if exceeding bottom
+      if (targets[targets.length - 1] > maxY) {
+        targets[targets.length - 1] = maxY;
+        for (let i = targets.length - 2; i >= 0; i--) {
+          const nextItem = list[i + 1];
+          const dynamicGap = Math.max(32, (list[i].nameLines.length + 1) * 14 + 10);
+          if (targets[i] > targets[i + 1] - dynamicGap) {
+            targets[i] = targets[i + 1] - dynamicGap;
+          }
+        }
+      }
+
+      // Clamp all within canvas bounds
+      for (let i = 0; i < targets.length; i++) {
+        targets[i] = Math.max(minY, Math.min(maxY, targets[i]));
+      }
+
+      list.forEach((it, idx) => {
+        it.targetY = targets[idx];
+      });
+    };
+
+    adjustVerticalSpacing(rightItems);
+    adjustVerticalSpacing(leftItems);
+
+    return items;
+  }, [pieData, activeTotal, selectedCategoryName, cx, cy, pieRadius, chartHeight]);
 
   return (
     <View
@@ -325,7 +377,7 @@ export default function InsightsScreen() {
               style={[
                 styles.tabLabel,
                 {
-                  color: activeTab === 2 ? colors.income : colors.textSecondary,
+                  color: activeTab === 2 ? (isDark ? '#34D399' : colors.income) : colors.textSecondary,
                   fontWeight: activeTab === 2 ? '700' : '500',
                   fontSize: typography.base,
                 },
@@ -334,7 +386,7 @@ export default function InsightsScreen() {
               Income {totalIncome > 0 ? formatCurrency(totalIncome, 'INR', currencySymbol) : ''}
             </Text>
             {activeTab === 2 && (
-              <View style={[styles.activeUnderline, { backgroundColor: colors.income }]} />
+              <View style={[styles.activeUnderline, { backgroundColor: isDark ? '#34D399' : colors.income }]} />
             )}
           </TouchableOpacity>
 
@@ -351,90 +403,193 @@ export default function InsightsScreen() {
               style={[
                 styles.tabLabel,
                 {
-                  color: activeTab === 1 ? colors.expense : colors.textSecondary,
+                  color: activeTab === 1 ? (isDark ? '#F87171' : colors.expense) : colors.textSecondary,
                   fontWeight: activeTab === 1 ? '700' : '500',
                   fontSize: typography.base,
                 },
               ]}
             >
-              Expenses {formatCurrency(totalExpense > 0 ? totalExpense : activeTotal, 'INR', currencySymbol)}
+              Expenses {formatCurrency(totalExpense > 0 ? totalExpense : (activeTab === 1 ? activeTotal : 0), 'INR', currencySymbol)}
             </Text>
             {activeTab === 1 && (
-              <View style={[styles.activeUnderline, { backgroundColor: colors.expense }]} />
+              <View style={[styles.activeUnderline, { backgroundColor: isDark ? '#F87171' : colors.expense }]} />
             )}
           </TouchableOpacity>
         </View>
 
-        {/* Center Donut Chart Area with Interactive Center Details */}
-        <View style={styles.chartContainer}>
-          <Svg width={chartSize} height={chartSize}>
-            <G>{renderDonutSlices()}</G>
-          </Svg>
+        {/* Pie Chart Section with Curvy Leader Lines */}
+        {slicesWithLayout.length > 0 && activeTotal > 0 ? (
+          <View style={styles.chartWrapper}>
+            <Svg width={chartWidth} height={chartHeight}>
+              {/* Render Solid Pie Slices */}
+              <G>
+                {slicesWithLayout.length === 1 ? (
+                  <Circle
+                    cx={cx}
+                    cy={cy}
+                    r={pieRadius}
+                    fill={slicesWithLayout[0].color}
+                    stroke={colors.bg}
+                    strokeWidth={1.5}
+                    onPress={() =>
+                      setSelectedCategoryName(
+                        slicesWithLayout[0].isSelected ? null : slicesWithLayout[0].categoryName
+                      )
+                    }
+                  />
+                ) : (
+                  slicesWithLayout.map((slice, idx) => {
+                    const x1 = cx + pieRadius * Math.cos(slice.startAngle);
+                    const y1 = cy + pieRadius * Math.sin(slice.startAngle);
+                    const x2 = cx + pieRadius * Math.cos(slice.endAngle);
+                    const y2 = cy + pieRadius * Math.sin(slice.endAngle);
+                    const largeArc = slice.angle > Math.PI ? 1 : 0;
 
-          {/* Center Cutout Info Overlay */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setSelectedCategoryName(null)}
+                    const pathData = [
+                      `M ${cx} ${cy}`,
+                      `L ${x1} ${y1}`,
+                      `A ${pieRadius} ${pieRadius} 0 ${largeArc} 1 ${x2} ${y2}`,
+                      'Z',
+                    ].join(' ');
+
+                    return (
+                      <Path
+                        key={slice.categoryId ? `slice-${slice.categoryId}` : `slice-${idx}`}
+                        d={pathData}
+                        fill={slice.color}
+                        opacity={slice.isDimmed ? 0.25 : 1}
+                        stroke={colors.bg}
+                        strokeWidth={1.5}
+                        onPress={() =>
+                          setSelectedCategoryName(slice.isSelected ? null : slice.categoryName)
+                        }
+                      />
+                    );
+                  })
+                )}
+              </G>
+
+              {/* Render Curvy Leader Lines & Category Multi-line Labels */}
+              <G>
+                {slicesWithLayout
+                  .filter((it) => it.percentage >= 0.5)
+                  .map((it, idx) => {
+                    const isRight = it.isRight;
+                    const targetY = it.targetY;
+                    const isSelected = it.isSelected;
+
+                    // End anchor for leader line
+                    const xEnd = isRight
+                      ? Math.min(chartWidth - 6, Math.max(cx + pieRadius + 28, it.outX + 16))
+                      : Math.max(6, Math.min(cx - pieRadius - 28, it.outX - 16));
+
+                    // Smooth Bezier curve control points
+                    const cp1x = (it.edgeX + it.outX) / 2;
+                    const cp1y = (it.edgeY + it.outY) / 2;
+                    const cp2x = isRight ? xEnd - 10 : xEnd + 10;
+                    const cp2y = targetY;
+
+                    const leaderPath = `M ${it.edgeX} ${it.edgeY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${xEnd} ${targetY}`;
+                    const emoji = getCategoryEmoji(it.categoryName, it.categoryIcon);
+                    const nameLines = it.nameLines;
+                    const percentText = `${it.percentage.toFixed(1)} %`;
+
+                    const lineHeight = 13;
+                    const totalBlockHeight = (nameLines.length + 1) * lineHeight;
+                    const startY = targetY - totalBlockHeight / 2 + 10;
+
+                    return (
+                      <G
+                        key={`leader-${it.categoryId || idx}`}
+                        onPress={() =>
+                          setSelectedCategoryName(it.isSelected ? null : it.categoryName)
+                        }
+                      >
+                        {/* Slice Edge Anchor Dot */}
+                        <Circle
+                          cx={it.edgeX}
+                          cy={it.edgeY}
+                          r={isSelected ? 3.5 : 2.5}
+                          fill={it.color}
+                          opacity={it.isDimmed ? 0.25 : 1}
+                        />
+
+                        {/* Smooth Curvy Leader Line */}
+                        <Path
+                          d={leaderPath}
+                          stroke={it.color}
+                          strokeWidth={isSelected ? 2.2 : 1.5}
+                          fill="none"
+                          opacity={it.isDimmed ? 0.25 : 0.9}
+                        />
+
+                        {/* Multi-line Category Name */}
+                        {nameLines.map((lineText, lIdx) => {
+                          const lineY = startY + lIdx * lineHeight;
+                          return (
+                            <SvgText
+                              key={`nl-${lIdx}`}
+                              x={isRight ? xEnd + 5 : xEnd - 5}
+                              y={lineY}
+                              fill={isSelected ? it.color : colors.text}
+                              fontSize={isSelected ? 11.5 : 10.5}
+                              fontWeight={isSelected ? '800' : '700'}
+                              textAnchor={isRight ? 'start' : 'end'}
+                            >
+                              {lIdx === 0 ? `${emoji} ${lineText}` : lineText}
+                            </SvgText>
+                          );
+                        })}
+
+                        {/* Percentage and formatted amount when selected */}
+                        <SvgText
+                          x={isRight ? xEnd + 5 : xEnd - 5}
+                          y={startY + nameLines.length * lineHeight + 1}
+                          fill={
+                            isSelected
+                              ? it.color
+                              : isDark
+                              ? '#9CA3AF'
+                              : colors.textSecondary
+                          }
+                          fontSize={isSelected ? 10.5 : 9.5}
+                          fontWeight={isSelected ? '800' : '600'}
+                          textAnchor={isRight ? 'start' : 'end'}
+                        >
+                          {isSelected
+                            ? `${percentText} • ${formatCurrency(it.totalAmount, 'INR', currencySymbol).replace('.00', '')}`
+                            : percentText}
+                        </SvgText>
+                      </G>
+                    );
+                  })}
+              </G>
+            </Svg>
+          </View>
+        ) : (
+          /* Clean Non-overlapping Empty State Card */
+          <Card
             style={[
-              styles.centerInfoContainer,
-              {
-                width: innerRadius * 2 - 8,
-                height: innerRadius * 2 - 8,
-                borderRadius: innerRadius,
-                backgroundColor: colors.card,
-              },
+              styles.emptyChartCard,
+              { backgroundColor: colors.card, borderColor: colors.cardBorder },
             ]}
           >
-            {selectedCategory ? (
-              <View style={styles.centerTextWrapper}>
-                <Text style={styles.centerEmoji}>
-                  {getCategoryEmoji(selectedCategory.categoryName, selectedCategory.categoryIcon)}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.centerCategoryName, { color: colors.text, fontSize: typography.sm }]}
-                >
-                  {selectedCategory.categoryName}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.centerAmount, { color: selectedCategory.color, fontSize: typography.base }]}
-                >
-                  {formatCurrency(selectedCategory.totalAmount, 'INR', currencySymbol)}
-                </Text>
-                <View style={[styles.centerPill, { backgroundColor: `${selectedCategory.color}20` }]}>
-                  <Text style={[styles.centerPillText, { color: selectedCategory.color }]}>
-                    {selectedCategory.percentage < 1 ? '<1%' : `${selectedCategory.percentage.toFixed(1)}%`}
-                  </Text>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.centerTextWrapper}>
-                <Text style={[styles.centerSubLabel, { color: colors.textSecondary, fontSize: typography.xs }]}>
-                  {activeTab === 1 ? 'Total Expense' : 'Total Income'}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.centerGrandTotal, { color: colors.text, fontSize: typography.md }]}
-                >
-                  {formatCurrency(activeTotal, 'INR', currencySymbol)}
-                </Text>
-                <Text style={[styles.centerCatCount, { color: colors.textMuted, fontSize: 11 }]}>
-                  {pieData.length} {pieData.length === 1 ? 'Category' : 'Categories'}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {pieData.length === 0 && (
-            <View style={styles.emptyPieOverlay}>
-              <PieIcon size={30} color={colors.textMuted} />
-              <Text style={[styles.emptyPieText, { color: colors.textMuted, fontSize: typography.xs }]}>
-                No {activeTab === 1 ? 'expenses' : 'income'} recorded
-              </Text>
+            <View style={[styles.emptyChartIconCircle, { backgroundColor: `${colors.accent}15` }]}>
+              <PieIcon size={38} color={colors.accent} />
             </View>
-          )}
-        </View>
+            <Text style={[styles.emptyChartTitle, { color: colors.text, fontSize: typography.md }]}>
+              No {activeTab === 1 ? 'expenses' : 'income'} this period
+            </Text>
+            <Text
+              style={[
+                styles.emptyChartSub,
+                { color: colors.textSecondary, fontSize: typography.sm },
+              ]}
+            >
+              Tap the + button below to log your {activeTab === 1 ? 'expense' : 'income'} transactions.
+            </Text>
+          </Card>
+        )}
 
         {/* Selected Category Filter Banner */}
         {selectedCategoryName && (
@@ -455,18 +610,11 @@ export default function InsightsScreen() {
 
         {/* Category Breakdown List */}
         <View style={styles.categoriesListContainer}>
-          {pieData.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <EmptyState
-                title={`No ${activeTab === 1 ? 'expenses' : 'income'} this period`}
-                description="Tap the + button below to log your transactions."
-              />
-            </Card>
-          ) : (
+          {pieData.length === 0 ? null : (
             pieData.map((cat, idx) => {
               const isSelected = selectedCategoryName === cat.categoryName;
               const emoji = getCategoryEmoji(cat.categoryName, cat.categoryIcon);
-              const percentDisplay = cat.percentage < 1 ? '<1%' : `${cat.percentage.toFixed(1)}%`;
+              const percentDisplay = cat.percentage < 1 ? '<1%' : `${cat.percentage.toFixed(0)}%`;
 
               return (
                 <TouchableOpacity
@@ -487,12 +635,11 @@ export default function InsightsScreen() {
                       <Text style={styles.percentBadgeText}>{percentDisplay}</Text>
                     </View>
 
-                    {/* Center: Emoji + Name + Txn Count */}
+                    {/* Center: Emoji + Full Name + Txn Count */}
                     <View style={styles.categoryInfoCenter}>
                       <Text style={styles.categoryEmoji}>{emoji}</Text>
                       <View style={styles.categoryNameColumn}>
                         <Text
-                          numberOfLines={1}
                           style={[styles.categoryNameText, { color: colors.text, fontSize: typography.base }]}
                         >
                           {cat.categoryName || 'General'}
@@ -550,7 +697,10 @@ export default function InsightsScreen() {
           <Card style={[styles.dailyChartCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartBarsRow}>
               {dailyBreakdown.map((item, idx) => {
-                const heightPercent = maxDailyExpense > 0 ? Math.max(8, Math.round((item.expenseTotal / maxDailyExpense) * 100)) : 8;
+                const heightPercent =
+                  maxDailyExpense > 0
+                    ? Math.max(8, Math.round((item.expenseTotal / maxDailyExpense) * 100))
+                    : 8;
                 const isPeak = maxDailyExpense > 0 && item.expenseTotal === maxDailyExpense;
 
                 return (
@@ -561,7 +711,9 @@ export default function InsightsScreen() {
                         { color: isPeak ? colors.accent : colors.textMuted, fontSize: 9 },
                       ]}
                     >
-                      {item.expenseTotal > 0 ? formatCurrency(item.expenseTotal, 'INR', currencySymbol).replace('.00', '') : ''}
+                      {item.expenseTotal > 0
+                        ? formatCurrency(item.expenseTotal, 'INR', currencySymbol).replace('.00', '')
+                        : ''}
                     </Text>
                     <View style={styles.barTrack}>
                       <View
@@ -569,7 +721,11 @@ export default function InsightsScreen() {
                           styles.barFill,
                           {
                             height: `${heightPercent}%`,
-                            backgroundColor: isPeak ? colors.accent : item.expenseTotal > 0 ? `${colors.accent}70` : colors.inputBg,
+                            backgroundColor: isPeak
+                              ? colors.accent
+                              : item.expenseTotal > 0
+                              ? `${colors.accent}70`
+                              : colors.inputBg,
                             borderRadius: radius.sm,
                           },
                         ]}
@@ -652,71 +808,37 @@ const styles = StyleSheet.create({
     height: 3,
     borderRadius: 3,
   },
-  chartContainer: {
+  chartWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 14,
-    position: 'relative',
+    marginVertical: 10,
   },
-  centerInfoContainer: {
-    position: 'absolute',
+  emptyChartCard: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginBottom: 20,
   },
-  centerTextWrapper: {
+  emptyChartIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    marginBottom: 16,
   },
-  centerEmoji: {
-    fontSize: 22,
-    marginBottom: 2,
-  },
-  centerCategoryName: {
-    fontWeight: '700',
-    maxWidth: 120,
+  emptyChartTitle: {
+    fontWeight: '800',
+    marginBottom: 6,
     textAlign: 'center',
   },
-  centerAmount: {
-    fontWeight: '900',
-    letterSpacing: -0.3,
-  },
-  centerPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginTop: 2,
-  },
-  centerPillText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  centerSubLabel: {
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  centerGrandTotal: {
-    fontWeight: '900',
-    letterSpacing: -0.5,
-  },
-  centerCatCount: {
-    fontWeight: '600',
-  },
-  emptyPieOverlay: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  emptyPieText: {
-    fontWeight: '600',
+  emptyChartSub: {
+    textAlign: 'center',
+    maxWidth: 240,
+    lineHeight: 18,
   },
   selectedBanner: {
     flexDirection: 'row',
@@ -760,7 +882,7 @@ const styles = StyleSheet.create({
   percentBadge: {
     paddingVertical: 5,
     paddingHorizontal: 9,
-    minWidth: 46,
+    minWidth: 44,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -786,6 +908,7 @@ const styles = StyleSheet.create({
   },
   categoryNameText: {
     fontWeight: '700',
+    flexWrap: 'wrap',
   },
   categorySubCount: {
     marginTop: 1,
@@ -803,9 +926,6 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: '100%',
     borderRadius: 2,
-  },
-  emptyCard: {
-    marginBottom: 20,
   },
   toggleDailyBtn: {
     flexDirection: 'row',
